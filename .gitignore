@@ -22,3 +22,9 @@
 **/.git-local-backup/
 
 frontend/.freebuff/
+
+backend/dist/
+backend/.git-local-backup/
+frontend/.next/
+frontend/.git-local-backup/
+frontend/.freebuff/
