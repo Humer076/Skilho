@@ -20,3 +20,5 @@
 
 # Preserve original nested Git metadata outside the published project
 **/.git-local-backup/
+
+frontend/.freebuff/
