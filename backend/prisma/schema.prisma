@@ -1,0 +1,444 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String               @id @default(uuid())
+  email           String?              @unique
+  mobile          String?              @unique
+  passwordHash    String
+  role            Role
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  employeeProfile EmployeeProfile?
+  employerProfile EmployerProfile?
+  notifications   Notification[]
+  resetTokens     PasswordResetToken[]
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model EmployerProfile {
+  id                    String              @id @default(uuid())
+  userId                String              @unique
+  companyName           String
+  legalName             String?
+  gstNumber             String?
+  city                  String?
+  state                 String?
+  verificationStatus    VerificationStatus  @default(PENDING_VERIFICATION)
+  createdAt             DateTime            @default(now())
+  address               String?
+  authorizedDesignation String?
+  authorizedEmail       String?
+  authorizedMobile      String?
+  authorizedName        String?
+  branchCount           Int?
+  companyEmail          String?
+  companyPhone          String?
+  companyType           String?
+  country               String?
+  description           String?
+  employeeCount         Int?
+  establishedYear       Int?
+  pincode               String?
+  registrationDetails   String?
+  specializations       String[]            @default([])
+  technicianCount       Int?
+  website               String?
+  documents             CompanyDocument[]
+  user                  User                @relation(fields: [userId], references: [id])
+  jobs                  Job[]
+  payments              Payment[]
+  subscriptions         Subscription[]
+  events                VerificationEvent[]
+}
+
+model CompanyDocument {
+  id                String              @id @default(uuid())
+  employerProfileId String
+  type              CompanyDocumentType
+  originalName      String
+  storedName        String              @unique
+  mimeType          String
+  size              Int
+  createdAt         DateTime            @default(now())
+  employerProfile   EmployerProfile     @relation(fields: [employerProfileId], references: [id], onDelete: Cascade)
+
+  @@index([employerProfileId])
+}
+
+model VerificationEvent {
+  id                String              @id @default(uuid())
+  employerProfileId String
+  adminId           String?
+  action            VerificationAction
+  fromStatus        VerificationStatus?
+  toStatus          VerificationStatus?
+  note              String?
+  visibleToEmployer Boolean             @default(false)
+  createdAt         DateTime            @default(now())
+  employerProfile   EmployerProfile     @relation(fields: [employerProfileId], references: [id], onDelete: Cascade)
+
+  @@index([employerProfileId])
+}
+
+model Job {
+  id                    String            @id @default(uuid())
+  employerProfileId     String
+  title                 String
+  description           String
+  category              String
+  vacancies             Int               @default(1)
+  specializations       String[]          @default([])
+  experience            ExperienceLevel
+  salaryMin             Int?
+  salaryMax             Int?
+  salaryNegotiable      Boolean           @default(false)
+  city                  String
+  state                 String
+  workType              WorkType
+  joiningPreference     JoiningPreference
+  workingHours          String?
+  weeklyHolidays        String?
+  accommodationProvided Boolean           @default(false)
+  foodProvided          Boolean           @default(false)
+  travelAllowance       Boolean           @default(false)
+  overtimeAvailable     Boolean           @default(false)
+  requiredCertificates  String?
+  interviewProcess      String?
+  status                JobStatus         @default(DRAFT)
+  publishedAt           DateTime?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  employerProfile       EmployerProfile   @relation(fields: [employerProfileId], references: [id], onDelete: Cascade)
+  applications          JobApplication[]
+  savedBy               SavedJob[]
+
+  @@index([employerProfileId])
+  @@index([status])
+}
+
+model EmployeeProfile {
+  id                    String            @id @default(uuid())
+  userId                String            @unique
+  fullName              String?
+  professionalTitle     String?
+  currentCity           String?
+  currentState          String?
+  totalExperienceMonths Int?
+  employmentStatus      EmploymentStatus?
+  expectedSalary        Int?
+  preferredLocation     String?
+  noticePeriodDays      Int?
+  immediateJoining      Boolean           @default(false)
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  photoMimeType         String?
+  photoStoredName       String?           @unique
+  shareContactDetails   Boolean           @default(false)
+  verified              Boolean           @default(false)
+  visibleToEmployers    Boolean           @default(true)
+  dateOfBirth           String?
+  gender                String?
+  bio                   String?
+  careerEntries         CareerEntry[]
+  certificates          Certificate[]
+  education             Education[]
+  user                  User              @relation(fields: [userId], references: [id])
+  skills                EmployeeSkill[]
+  applications          JobApplication[]
+  savedJobs             SavedJob[]
+}
+
+model Skill {
+  id        String          @id @default(uuid())
+  name      String          @unique
+  active    Boolean         @default(true)
+  createdAt DateTime        @default(now())
+  employees EmployeeSkill[]
+}
+
+model EmployeeSkill {
+  id                String          @id @default(uuid())
+  employeeProfileId String
+  skillId           String
+  level             SkillLevel
+  employeeProfile   EmployeeProfile @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
+  skill             Skill           @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeProfileId, skillId])
+  @@index([skillId])
+}
+
+model CareerEntry {
+  id                  String               @id @default(uuid())
+  employeeProfileId   String
+  organization        String
+  position            String
+  stage               CareerStage
+  employmentType      CareerEmploymentType
+  startDate           DateTime
+  endDate             DateTime?
+  location            String?
+  skills              String[]             @default([])
+  responsibilities    String?
+  certificateObtained String?
+  description         String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  employeeProfile     EmployeeProfile      @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
+
+  @@index([employeeProfileId])
+}
+
+model Education {
+  id                String          @id @default(uuid())
+  employeeProfileId String
+  institution       String
+  qualification     String
+  fieldOfStudy      String?
+  startYear         Int?
+  endYear           Int?
+  createdAt         DateTime        @default(now())
+  employeeProfile   EmployeeProfile @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
+
+  @@index([employeeProfileId])
+}
+
+model Certificate {
+  id                String          @id @default(uuid())
+  employeeProfileId String
+  name              String
+  issuer            String?
+  issuedYear        Int?
+  createdAt         DateTime        @default(now())
+  employeeProfile   EmployeeProfile @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
+
+  @@index([employeeProfileId])
+}
+
+model JobApplication {
+  id                String            @id @default(uuid())
+  jobId             String
+  employeeProfileId String
+  status            ApplicationStatus @default(APPLIED)
+  coverNote         String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  employeeProfile   EmployeeProfile   @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
+  job               Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, employeeProfileId])
+  @@index([jobId])
+  @@index([employeeProfileId])
+}
+
+model SavedJob {
+  id                String          @id @default(uuid())
+  jobId             String
+  employeeProfileId String
+  createdAt         DateTime        @default(now())
+  employeeProfile   EmployeeProfile @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
+  job               Job             @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, employeeProfileId])
+  @@index([employeeProfileId])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  message   String
+  link      String?
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, read])
+}
+
+model Package {
+  id              String         @id @default(uuid())
+  name            String
+  tier            PackageTier
+  priceRupees     Int
+  durationDays    Int
+  jobCredits      Int
+  featuredJobs    Boolean        @default(false)
+  advancedSearch  Boolean        @default(false)
+  priorityListing Boolean        @default(false)
+  active          Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  payments        Payment[]
+  subscriptions   Subscription[]
+}
+
+model Subscription {
+  id                String             @id @default(uuid())
+  employerProfileId String
+  packageId         String
+  status            SubscriptionStatus @default(ACTIVE)
+  jobCreditsLeft    Int
+  startedAt         DateTime           @default(now())
+  expiresAt         DateTime
+  createdAt         DateTime           @default(now())
+  employerProfile   EmployerProfile    @relation(fields: [employerProfileId], references: [id], onDelete: Cascade)
+  package           Package            @relation(fields: [packageId], references: [id])
+
+  @@index([employerProfileId])
+}
+
+model Payment {
+  id                String          @id @default(uuid())
+  employerProfileId String
+  packageId         String
+  amountRupees      Int
+  razorpayOrderId   String?         @unique
+  razorpayPaymentId String?         @unique
+  status            String          @default("CREATED")
+  createdAt         DateTime        @default(now())
+  employerProfile   EmployerProfile @relation(fields: [employerProfileId], references: [id], onDelete: Cascade)
+  package           Package         @relation(fields: [packageId], references: [id])
+
+  @@index([employerProfileId])
+}
+
+enum Role {
+  EMPLOYER
+  EMPLOYEE
+  ADMIN
+}
+
+enum VerificationStatus {
+  REGISTRATION_SUBMITTED
+  PENDING_VERIFICATION
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum CompanyDocumentType {
+  REGISTRATION_CERTIFICATE
+  GST_CERTIFICATE
+  SHOP_ESTABLISHMENT_CERTIFICATE
+  BUSINESS_ADDRESS_PROOF
+  AUTHORIZED_PERSON_ID
+  OTHER
+}
+
+enum VerificationAction {
+  STATUS_CHANGE
+  NOTE
+  DOCUMENT_REQUEST
+}
+
+enum JobStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+}
+
+enum ExperienceLevel {
+  FRESHER
+  Y0_1
+  Y1_3
+  Y3_5
+  Y5_10
+  Y10_PLUS
+}
+
+enum JoiningPreference {
+  IMMEDIATE
+  WITHIN_7_DAYS
+  WITHIN_15_DAYS
+  WITHIN_30_DAYS
+  NOTICE_PERIOD_FLEXIBLE
+}
+
+enum WorkType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP
+}
+
+enum EmploymentStatus {
+  EMPLOYED
+  UNEMPLOYED
+  STUDENT
+  FREELANCER
+}
+
+enum SkillLevel {
+  BEGINNER
+  BASIC
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+enum CareerStage {
+  STUDENT
+  JUNIOR_TECHNICIAN
+  EXPERIENCED_TECHNICIAN
+}
+
+enum CareerEmploymentType {
+  TRAINING
+  INTERNSHIP
+  APPRENTICESHIP
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  FREELANCE
+}
+
+enum ApplicationStatus {
+  APPLIED
+  UNDER_REVIEW
+  SHORTLISTED
+  INTERVIEW_SCHEDULED
+  SELECTED
+  REJECTED
+  WITHDRAWN
+  HIRED
+}
+
+enum NotificationType {
+  NEW_APPLICATION
+  APPLICATION_STATUS_CHANGED
+  VERIFICATION_STATUS_CHANGED
+  DOCUMENT_REQUESTED
+}
+
+enum PackageTier {
+  NORMAL
+  GOLD
+  CUSTOM
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}

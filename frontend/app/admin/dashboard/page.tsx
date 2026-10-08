@@ -1,0 +1,600 @@
+'use client';
+
+import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import AdminShell, { AIcon, ADMIN_TOKEN_KEY } from '../components/AdminShell';
+
+const API = 'http://localhost:3000';
+
+type Stat = { value: number; change: number | null };
+type Dashboard = {
+  stats: {
+    totalUsers: Stat;
+    technicians: Stat;
+    employers: Stat;
+    activeJobs: Stat;
+    applications: Stat;
+    pendingVerifications: number;
+  };
+  userGrowth: { month: string; total: number }[];
+  distribution: { technicians: number; employers: number };
+  jobCategories: { name: string; count: number }[];
+  recentUsers: { id: string; name: string; contact: string; role: string; createdAt: string }[];
+  pendingCompanies: {
+    id: string;
+    companyName: string;
+    companyType: string | null;
+    city: string | null;
+    verificationStatus: string;
+    createdAt: string;
+  }[];
+  recentApplications: { id: string; jobTitle: string; applicant: string; status: string; createdAt: string }[];
+};
+
+const fmtDate = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+
+const nice = (s: string) => s.toLowerCase().replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
+
+const ROLE_LABEL: Record<string, string> = { EMPLOYEE: 'Technician', EMPLOYER: 'Employer' };
+const APP_BADGE: Record<string, string> = {
+  APPLIED: 'badge-info', UNDER_REVIEW: 'badge-warning', SHORTLISTED: 'badge-success',
+  INTERVIEW_SCHEDULED: 'badge-info', SELECTED: 'badge-success', HIRED: 'badge-success',
+  REJECTED: 'badge-danger', WITHDRAWN: 'badge-neutral',
+};
+
+const STAT_CARDS: { key: keyof Dashboard['stats']; label: string; icon: string; grad: string }[] = [
+  { key: 'totalUsers', label: 'Total Users', icon: 'users', grad: 'from-blue-500 to-indigo-600' },
+  { key: 'technicians', label: 'Technicians', icon: 'tool', grad: 'from-emerald-500 to-teal-600' },
+  { key: 'employers', label: 'Employers', icon: 'building', grad: 'from-indigo-500 to-violet-600' },
+  { key: 'activeJobs', label: 'Active Jobs', icon: 'briefcase', grad: 'from-amber-500 to-orange-600' },
+  { key: 'applications', label: 'Applications', icon: 'file', grad: 'from-rose-500 to-pink-600' },
+];
+
+/* ------------------------------------------------------------------ */
+/*  Motion / polish layer (visual only — no logic)                     */
+/* ------------------------------------------------------------------ */
+const STYLES = `
+  @keyframes adUp   { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes adIn   { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes adPop  { from { opacity: 0; transform: translateY(14px) scale(.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  @keyframes adDraw { to { stroke-dashoffset: 0; } }
+  @keyframes adGrow { from { width: 0; } }
+  @keyframes adShimmer { 100% { transform: translateX(100%); } }
+
+  .ad-up   { animation: adUp .6s cubic-bezier(.22,.61,.36,1) both; }
+  .ad-pop  { animation: adPop .45s cubic-bezier(.22,.61,.36,1) both; }
+  .ad-in   { animation: adIn .8s ease both; }
+
+  .ad-card { transition: transform .3s cubic-bezier(.22,.61,.36,1), box-shadow .3s ease, border-color .3s ease; }
+  .ad-card:hover { transform: translateY(-4px); }
+
+  .ad-line { stroke-dasharray: 1; stroke-dashoffset: 1; animation: adDraw 1.5s .3s cubic-bezier(.4,0,.2,1) forwards; }
+  .ad-grow { animation: adGrow 1s cubic-bezier(.22,.61,.36,1) both; }
+
+  .ad-shimmer { position: relative; overflow: hidden; }
+  .ad-shimmer::after {
+    content: ''; position: absolute; inset: 0; transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.75), transparent);
+    animation: adShimmer 1.5s infinite;
+  }
+
+  .ad-table tbody tr { transition: background-color .18s ease; }
+  .ad-table tbody tr:hover { background-color: #f8fafc; }
+
+  .ad-tile { transition: transform .2s ease, box-shadow .2s ease; }
+  .ad-tile:hover { transform: translateY(-1px) scale(1.04); }
+
+  .ad-dot { transition: r .2s ease; cursor: pointer; }
+  .ad-dot:hover { r: 6.5; }
+
+  .ad-link-arrow { transition: transform .2s ease; }
+  .ad-link:hover .ad-link-arrow { transform: translateX(4px); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ad-up, .ad-pop, .ad-in, .ad-line, .ad-grow, .ad-shimmer::after { animation: none !important; opacity: 1 !important; stroke-dashoffset: 0 !important; }
+    .ad-card:hover, .ad-tile:hover { transform: none; }
+  }
+`;
+
+function useCountUp(target: number, duration = 900) {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    let raf = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setValue(target * eased);
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return value;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Building blocks                                                    */
+/* ------------------------------------------------------------------ */
+
+function Card({
+  title, icon, action, children, className = '', delay = 0,
+}: { title: string; icon: string; action?: string; children: React.ReactNode; className?: string; delay?: number }) {
+  return (
+    <section
+      className={`surface ad-card ad-up group relative p-5 shadow-sm hover:shadow-xl ${className}`}
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="flex items-center gap-2 font-bold text-slate-900">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-50 to-brand-100 text-brand-600 ring-1 ring-brand-100 transition-transform duration-300 group-hover:scale-110">
+            <AIcon name={icon} className="h-4 w-4" />
+          </span>
+          {title}
+        </h2>
+        {action && (
+          <Link href={action} className="ad-link inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:underline">
+            View all <span className="ad-link-arrow">→</span>
+          </Link>
+        )}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function Empty({ text }: { text: string }) {
+  return <p className="py-6 text-center text-sm text-slate-500">{text}</p>;
+}
+
+function StatCard({
+  label, icon, grad, stat, delay,
+}: { label: string; icon: string; grad: string; stat: Stat; delay: number }) {
+  const animated = useCountUp(stat.value);
+  return (
+    <div
+      className="ad-card ad-up group relative overflow-hidden rounded-xl ring-1 ring-slate-900/[0.06] shadow-[0_1px_2px_rgba(12,16,19,.04),0_10px_28px_-14px_rgba(15,88,112,.14)] bg-white p-3 shadow-sm hover:border-slate-300 hover:shadow-xl"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className={`pointer-events-none absolute -right-8 -top-10 h-24 w-24 rounded-full bg-gradient-to-br ${grad} opacity-[0.10] blur-2xl transition-opacity duration-300 group-hover:opacity-25`} />
+      <div className="relative flex items-center gap-2.5">
+        <span className={`ad-tile flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${grad} text-white shadow-sm`}>
+          <AIcon name={icon} className="h-4 w-4" />
+        </span>
+        <div className="min-w-0">
+          <p className="text-xl font-bold leading-none tracking-tight text-slate-900 tabular-nums">
+            {Math.round(animated).toLocaleString('en-IN')}
+          </p>
+          <p className="mt-1 truncate text-xs text-slate-600">{label}</p>
+        </div>
+      </div>
+      <div className="relative mt-2 text-xs">
+        {stat.change === null ? (
+          <span className="text-slate-500">No earlier data to compare</span>
+        ) : (
+          <span className="flex flex-wrap items-center gap-1.5">
+            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold ${stat.change >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+              {stat.change >= 0 ? '↗ +' : '↘ '}{stat.change}%
+            </span>
+            <span className="text-xs text-slate-500">vs previous 30 days</span>
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function GrowthChart({ data }: { data: Dashboard['userGrowth'] }) {
+  const w = 400, h = 170, pad = 28;
+  const maxVal = Math.max(...data.map((d) => d.total), 0);
+  const top = Math.max(4, Math.ceil((maxVal * 1.1) / 4) * 4);
+  const y = (v: number) => h - 24 - (v / top) * (h - 40);
+  const pts = data.map((d, i) => [pad + (i * (w - pad * 2)) / Math.max(data.length - 1, 1), y(d.total)]);
+  const line = pts.map((p) => p.join(',')).join(' ');
+
+  if (!pts.length) return <Empty text="No growth data yet." />;
+
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-auto" role="img" aria-label="Total users at the end of each of the last six months">
+      <defs>
+        <linearGradient id="adLine" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#3b82f6" />
+          <stop offset="100%" stopColor="#6366f1" />
+        </linearGradient>
+        <linearGradient id="adArea" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.32" />
+          <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+
+      {[0, 1, 2, 3, 4].map((i) => (
+        <g key={i}>
+          <line
+            x1={pad} x2={w - pad} y1={y((top / 4) * i)} y2={y((top / 4) * i)}
+            stroke="#e2e8f0" strokeDasharray="4 6"
+          />
+          <text x={pad - 6} y={y((top / 4) * i) + 3} textAnchor="end" fontSize="9" fill="#94a3b8">
+            {Math.round((top / 4) * i)}
+          </text>
+        </g>
+      ))}
+
+      <polygon
+        className="ad-in"
+        style={{ animationDelay: '1.1s' }}
+        points={`${pts[0][0]},${h - 24} ${line} ${pts[pts.length - 1][0]},${h - 24}`}
+        fill="url(#adArea)"
+      />
+
+      <polyline
+        className="ad-line"
+        points={line}
+        fill="none"
+        stroke="url(#adLine)"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        pathLength={1}
+        style={{ filter: 'drop-shadow(0 4px 6px rgba(59,130,246,.25))' }}
+      />
+
+      {pts.map((p, i) => (
+        <g key={i} className="ad-in" style={{ animationDelay: `${1.15 + i * 0.07}s` }}>
+          <circle className="ad-dot" cx={p[0]} cy={p[1]} r="4" fill="#fff" stroke="#2563eb" strokeWidth="2.5">
+            <title>{`${data[i].month}: ${data[i].total} users`}</title>
+          </circle>
+          <text x={p[0]} y={h - 6} textAnchor="middle" fontSize="11" fill="#64748b">{data[i].month}</text>
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+function Skeleton() {
+  return (
+    <div className="mx-auto max-w-7xl space-y-6" aria-label="Loading dashboard">
+      <div className="h-10 w-72 rounded-xl bg-slate-200 ad-shimmer" />
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <div key={i} className="ad-shimmer h-28 rounded-2xl bg-slate-200" style={{ animationDelay: `${i * 80}ms` }} />
+        ))}
+      </div>
+      <div className="grid gap-4 lg:grid-cols-5">
+        <div className="ad-shimmer h-64 rounded-2xl bg-slate-200 lg:col-span-2" />
+        <div className="ad-shimmer h-64 rounded-2xl bg-slate-200 lg:col-span-2" />
+        <div className="ad-shimmer h-64 rounded-2xl bg-slate-200 lg:col-span-1" />
+      </div>
+      <div className="ad-shimmer h-64 rounded-2xl bg-slate-200" />
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Page                                                               */
+/* ------------------------------------------------------------------ */
+
+export default function AdminDashboardPage() {
+  const router = useRouter();
+  const [data, setData] = useState<Dashboard | null>(null);
+  const [error, setError] = useState('');
+  const [today, setToday] = useState('');
+
+  const [rejectId, setRejectId] = useState<string | null>(null);
+  const [rejectName, setRejectName] = useState('');
+  const [reason, setReason] = useState('');
+  const [rejectErr, setRejectErr] = useState('');
+  const [rejecting, setRejecting] = useState(false);
+
+  const load = useCallback(async () => {
+    const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+    if (!token) return router.replace('/admin/login');
+    try {
+      const res = await fetch(`${API}/admin/dashboard`, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.status === 401 || res.status === 403) {
+        localStorage.removeItem(ADMIN_TOKEN_KEY);
+        return router.replace('/admin/login');
+      }
+      if (!res.ok) throw new Error(`Could not load the dashboard (error ${res.status})`);
+      setData(await res.json());
+      setError('');
+    } catch (err) {
+      setError(err instanceof TypeError ? 'Cannot reach the backend. Is it running on port 3000?' : (err as Error).message);
+    }
+  }, [router]);
+
+  useEffect(() => {
+    setToday(new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }));
+    load();
+  }, [load]);
+
+  async function confirmReject() {
+    if (!rejectId) return;
+    if (!reason.trim()) return setRejectErr('Please enter a reason. The company will see it.');
+    setRejecting(true);
+    setRejectErr('');
+    try {
+      const res = await fetch(`${API}/admin/employers/${rejectId}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem(ADMIN_TOKEN_KEY)}` },
+        body: JSON.stringify({ status: 'REJECTED', note: reason.trim() }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error((Array.isArray(body.message) ? body.message.join(', ') : body.message) || 'Could not reject');
+      setRejectId(null);
+      setReason('');
+      load();
+    } catch (err) {
+      setRejectErr((err as Error).message);
+    } finally {
+      setRejecting(false);
+    }
+  }
+
+  const dist = data?.distribution;
+  const distTotal = (dist?.technicians ?? 0) + (dist?.employers ?? 0);
+  const techPct = distTotal ? Math.round((dist!.technicians / distTotal) * 100) : 0;
+  const donut = distTotal
+    ? `conic-gradient(#2563eb 0% ${techPct}%, #16a34a ${techPct}% 100%)`
+    : 'conic-gradient(#e2e8f0 0% 100%)';
+  const maxCat = Math.max(...(data?.jobCategories.map((c) => c.count) ?? [1]), 1);
+
+  return (
+    <AdminShell>
+      <style>{STYLES}</style>
+
+      {!data && !error && <Skeleton />}
+
+      {error && (
+        <div className="surface ad-pop mx-auto max-w-xl p-8 text-center shadow-lg">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600">
+            <AIcon name="shield" className="h-6 w-6" />
+          </div>
+          <p role="alert" className="mb-4 text-red-700">{error}</p>
+          <button type="button" onClick={load} className="btn-primary ad-tile">Try again</button>
+        </div>
+      )}
+
+      {data && (
+        <div className="mx-auto max-w-7xl space-y-6">
+          {/* ---------- Header ---------- */}
+          <div className="ad-up flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h1 className="bg-gradient-to-r from-slate-900 via-slate-800 to-brand-700 bg-clip-text text-2xl font-extrabold tracking-tight text-transparent sm:text-3xl">
+                Welcome back, Admin
+              </h1>
+              <p className="mt-1 text-slate-600">
+                Here&apos;s what&apos;s happening on Skilho today.
+                {data.stats.pendingVerifications > 0 && (
+                  <>
+                    {' '}
+                    <Link href="/admin/companies" className="ad-link font-semibold text-brand-700 hover:underline">
+                      {data.stats.pendingVerifications}{' '}
+                      {data.stats.pendingVerifications === 1 ? 'company needs' : 'companies need'} review.
+                    </Link>
+                  </>
+                )}
+              </p>
+            </div>
+            <p className="flex items-center gap-2 rounded-full border border-slate-200 bg-white/70 px-3.5 py-1.5 text-sm font-medium text-slate-600 shadow-sm backdrop-blur">
+              <AIcon name="calendar" className="h-4 w-4 text-brand-600" />
+              {today}
+            </p>
+          </div>
+
+          {/* ---------- Executive command strip ---------- */}
+          <section className="admin-command-hero ad-up" aria-label="Skilho platform status">
+            <div className="admin-command-grid">
+              <div>
+                <div className="admin-command-eyebrow"><i /> Skilho operations center <span className="ml-1 opacity-60">/</span> live platform view</div>
+                <h2>Everything important, under control.</h2>
+                <p>Monitor talent supply, employer demand, job activity and verification risk from one calm command center.</p>
+              </div>
+              <div className="admin-command-visual" aria-hidden="true">
+                <div className="admin-command-ring"><span /><b>LIVE</b></div>
+                <div className="admin-command-mini"><strong>{data.stats.activeJobs.value}</strong> active jobs&nbsp; · &nbsp;<strong>{data.stats.pendingVerifications}</strong> reviews</div>
+              </div>
+            </div>
+          </section>
+
+          {/* ---------- Stat cards ---------- */}
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
+            {STAT_CARDS.map((c, i) => (
+              <StatCard
+                key={c.key}
+                label={c.label}
+                icon={c.icon}
+                grad={c.grad}
+                stat={data.stats[c.key] as Stat}
+                delay={i * 70}
+              />
+            ))}
+          </div>
+
+          {/* ---------- Charts row ---------- */}
+          <div className="grid gap-4 lg:grid-cols-5">
+            <Card title="User growth" icon="chart" className="lg:col-span-2" delay={60}>
+              <GrowthChart data={data.userGrowth} />
+            </Card>
+
+            <Card title="User distribution" icon="users" className="lg:col-span-2" delay={120}>
+              {distTotal === 0 ? <Empty text="No users yet." /> : (
+                <div className="flex flex-wrap items-center gap-6">
+                  <div
+                    className="ad-pop relative h-40 w-40 shrink-0 rounded-full shadow-inner ring-1 ring-slate-200 transition-transform duration-500 hover:scale-[1.04]"
+                    style={{ background: donut, animationDelay: '180ms' }}
+                    role="img"
+                    aria-label="Technicians versus employers"
+                  >
+                    <div className="absolute inset-9 flex items-center justify-center rounded-full bg-white text-center shadow-sm">
+                      <div>
+                        <p className="text-lg font-extrabold text-slate-900">{distTotal.toLocaleString('en-IN')}</p>
+                        <p className="text-xs text-slate-500">users</p>
+                      </div>
+                    </div>
+                  </div>
+                  <ul className="space-y-3 text-sm">
+                    <li className="flex items-start gap-2">
+                      <span className="mt-1 h-3 w-3 rounded-full bg-[#2563eb] ring-4 ring-blue-100" />
+                      <span>
+                        <span className="font-semibold text-slate-900">Technicians {techPct}%</span><br />
+                        <span className="text-slate-500">({dist!.technicians})</span>
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="mt-1 h-3 w-3 rounded-full bg-[#16a34a] ring-4 ring-emerald-100" />
+                      <span>
+                        <span className="font-semibold text-slate-900">Employers {100 - techPct}%</span><br />
+                        <span className="text-slate-500">({dist!.employers})</span>
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+              )}
+            </Card>
+
+            <Card title="Job categories" icon="chart" className="lg:col-span-1" delay={180}>
+              {data.jobCategories.length === 0 ? <Empty text="No active jobs yet." /> : (
+                <ul className="space-y-3">
+                  {data.jobCategories.map((c, i) => (
+                    <li key={c.name} className="text-xs">
+                      <div className="mb-1 flex justify-between gap-2 text-slate-600">
+                        <span className="truncate">{c.name}</span>
+                        <span className="font-semibold text-slate-900">{c.count}</span>
+                      </div>
+                      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className="ad-grow h-2 rounded-full bg-gradient-to-r from-brand-500 to-indigo-500"
+                          style={{ width: `${(c.count / maxCat) * 100}%`, animationDelay: `${200 + i * 70}ms` }}
+                        />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+          </div>
+
+          {/* ---------- Tables row ---------- */}
+          <div className="grid gap-4 xl:grid-cols-2">
+            <Card title="Recent users" icon="users" action="/admin/users" delay={60}>
+              {data.recentUsers.length === 0 ? <Empty text="No users yet." /> : (
+                <div className="ad-table overflow-x-auto">
+                  <table className="table-premium">
+                    <thead><tr><th>Name</th><th>Role</th><th>Joined</th></tr></thead>
+                    <tbody>
+                      {data.recentUsers.map((u) => (
+                        <tr key={u.id}>
+                          <td>
+                            <p className="font-semibold text-slate-900">{u.name}</p>
+                            <p className="text-xs text-slate-500">{u.contact}</p>
+                          </td>
+                          <td>
+                            <span className="badge badge-neutral">{ROLE_LABEL[u.role] ?? nice(u.role)}</span>
+                          </td>
+                          <td className="whitespace-nowrap">{fmtDate(u.createdAt)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Card>
+
+            <Card title="Pending company verifications" icon="shield" action="/admin/companies" delay={120}>
+              {data.pendingCompanies.length === 0 ? <Empty text="No companies are waiting for review." /> : (
+                <div className="ad-table overflow-x-auto">
+                  <table className="table-premium">
+                    <thead><tr><th>Company</th><th>Submitted</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody>
+                      {data.pendingCompanies.map((c) => (
+                        <tr key={c.id}>
+                          <td>
+                            <p className="font-semibold text-slate-900">{c.companyName}</p>
+                            <p className="text-xs text-slate-500">{[c.companyType, c.city].filter(Boolean).join(' · ')}</p>
+                          </td>
+                          <td className="whitespace-nowrap">{fmtDate(c.createdAt)}</td>
+                          <td><span className="badge badge-warning">{nice(c.verificationStatus)}</span></td>
+                          <td className="whitespace-nowrap">
+                            <Link href="/admin/companies" className="btn-primary ad-tile !px-3 !py-1.5 !text-xs">Review</Link>{' '}
+                            <button
+                              type="button"
+                              onClick={() => { setRejectId(c.id); setRejectName(c.companyName); setReason(''); setRejectErr(''); }}
+                              className="ad-tile inline-flex items-center rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-red-700"
+                            >
+                              Reject
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Card>
+          </div>
+
+          <Card title="Recent applications" icon="file" action="/admin/applications" delay={60}>
+            {data.recentApplications.length === 0 ? <Empty text="No applications yet." /> : (
+              <div className="ad-table overflow-x-auto">
+                <table className="table-premium">
+                  <thead><tr><th>Job title</th><th>Applicant</th><th>Applied at</th><th>Status</th></tr></thead>
+                  <tbody>
+                    {data.recentApplications.map((a) => (
+                      <tr key={a.id}>
+                        <td className="font-semibold text-slate-900">{a.jobTitle}</td>
+                        <td>{a.applicant}</td>
+                        <td className="whitespace-nowrap">{fmtDate(a.createdAt)}</td>
+                        <td><span className={`badge ${APP_BADGE[a.status] ?? 'badge-neutral'}`}>{nice(a.status)}</span></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
+        </div>
+      )}
+
+      {/* Reject dialog */}
+      {rejectId && (
+        <div
+          className="ad-in fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="reject-title"
+        >
+          <div className="ad-pop w-full max-w-md rounded-xl bg-white p-6 shadow-2xl ring-1 ring-slate-900/5">
+            <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-red-50 text-red-600">
+              <AIcon name="shield" className="h-5 w-5" />
+            </div>
+            <h2 id="reject-title" className="text-lg font-bold text-slate-900">Reject {rejectName}?</h2>
+            <p className="mt-1 text-sm text-slate-600">The company will be able to see this reason.</p>
+            <label htmlFor="reason" className="label-premium mt-4">Reason</label>
+            <textarea
+              id="reason"
+              rows={4}
+              maxLength={1000}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              className="input-premium"
+            />
+            {rejectErr && <p role="alert" className="mt-2 text-sm text-red-700">{rejectErr}</p>}
+            <div className="mt-5 flex justify-end gap-3">
+              <button type="button" onClick={() => setRejectId(null)} className="btn-secondary ad-tile">Cancel</button>
+              <button
+                type="button"
+                onClick={confirmReject}
+                disabled={rejecting}
+                className="ad-tile inline-flex items-center rounded-lg bg-red-600 px-5 py-2.5 font-semibold text-white shadow-md hover:bg-red-700 disabled:opacity-50"
+              >
+                {rejecting ? 'Please wait...' : 'Reject company'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </AdminShell>
+  );
+}

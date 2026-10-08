@@ -1,0 +1,22 @@
+# Dependencies
+**/node_modules/
+
+# Environment and secrets
+**/.env
+**/.env.*
+!**/.env.example
+**/*.pem
+**/*.key
+
+# Build output and caches
+**/dist/
+**/.next/
+**/build/
+**/coverage/
+**/*.tsbuildinfo
+
+# Local uploads and user data
+/backend/storage/
+
+# Preserve original nested Git metadata outside the published project
+**/.git-local-backup/

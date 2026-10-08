@@ -1,0 +1,511 @@
+'use client';
+
+import { useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { adminFetchList } from './listApi';
+import ThemeToggle from '../../components/ThemeToggle';
+
+export const ADMIN_TOKEN_KEY = 'skilho_admin_token';
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+
+const ICONS: Record<string, string> = {
+  dashboard: 'M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z',
+  users: 'M16 19v-1a4 4 0 00-4-4H8a4 4 0 00-4 4v1M10 11a3 3 0 100-6 3 3 0 000 6zM20 19v-1a3 3 0 00-2-2.8M16 5.2a3 3 0 010 5.6',
+  tool: 'M4 20l9-9M14 6a4 4 0 005 5l-2 2-5-5z',
+  building: 'M4 21V5l8-2v18M12 9h8v12M7 9h2M7 13h2M7 17h2M15 13h2M15 17h2',
+  briefcase: 'M4 8h16v11H4zM9 8V5h6v3M4 13h16',
+  package: 'M4 7l8-4 8 4v10l-8 4-8-4zM4 7l8 4 8-4M12 11v10',
+  file: 'M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 16h5',
+  shield: 'M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6zM9 12l2 2 4-4',
+  star: 'M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6-5.3-3-5.3 3 1.2-6L3.4 9.3l6-.7z',
+  route: 'M5 19a2 2 0 100-4 2 2 0 000 4zM19 9a2 2 0 100-4 2 2 0 000 4zM7 17h6a3 3 0 000-6h-2a3 3 0 010-6h6',
+  chart: 'M4 20V10M10 20V4M16 20v-8M22 20H2',
+  pulse: 'M3 12h4l2-6 4 12 2-6h6',
+  gear: 'M12 15a3 3 0 100-6 3 3 0 000 6zM4 12h2M18 12h2M12 4v2M12 18v2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4M6.3 17.7l1.4-1.4M16.3 7.7l1.4-1.4',
+  logout: 'M9 4H5v16h4M16 8l4 4-4 4M20 12H9',
+  menu: 'M4 6h16M4 12h16M4 18h16',
+  bell: 'M6 16V11a6 6 0 1112 0v5l2 2H4zM10 20a2 2 0 004 0',
+  search: 'M11 18a7 7 0 100-14 7 7 0 000 14zM20 20l-4-4',
+  calendar: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4',
+};
+
+export function AIcon({ name, className = 'w-5 h-5' }: { name: string; className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d={ICONS[name] ?? ''} />
+    </svg>
+  );
+}
+
+const NAV = [
+  { label: 'Dashboard', href: '/admin/dashboard', icon: 'dashboard' },
+  { label: 'Users', href: '/admin/users', icon: 'users' },
+  { label: 'Technicians', href: '/admin/technicians', icon: 'tool' },
+  { label: 'Employers', href: '/admin/employers', icon: 'building' },
+  { label: 'Jobs', href: '/admin/jobs', icon: 'briefcase' },
+  { label: 'Applications', href: '/admin/applications', icon: 'file' },
+  { label: 'Packages', href: '/admin/packages', icon: 'package' },
+  { label: 'Company Verification', href: '/admin/companies', icon: 'shield' },
+  { label: 'Skills', href: '/admin/skills', icon: 'star' },
+  { label: 'Career Journey', href: '/admin/career-journey', icon: 'route' },
+  { label: 'Reports', href: '/admin/reports', icon: 'chart' },
+  { label: 'Settings', href: '/admin/settings', icon: 'gear' },
+];
+
+/* ------------------------------------------------------------------ */
+/*  Global search                                                      */
+/* ------------------------------------------------------------------ */
+
+type SearchKind = 'user' | 'technician' | 'employer' | 'job';
+
+type SearchItem = {
+  id: string;
+  label: string;
+  sublabel: string;
+  href: string;
+  kind: SearchKind;
+};
+
+type SearchIndex = {
+  users: any[];
+  technicians: any[];
+  employers: any[];
+  jobs: any[];
+};
+
+const KIND_META: Record<SearchKind, { title: string; icon: string; tint: string }> = {
+  user: { title: 'Users', icon: 'users', tint: 'from-indigo-500 to-violet-500' },
+  technician: { title: 'Technicians', icon: 'tool', tint: 'from-emerald-500 to-teal-500' },
+  employer: { title: 'Employers', icon: 'building', tint: 'from-amber-500 to-orange-500' },
+  job: { title: 'Jobs', icon: 'briefcase', tint: 'from-sky-500 to-blue-500' },
+};
+
+const KIND_ORDER: SearchKind[] = ['user', 'technician', 'employer', 'job'];
+
+function GlobalSearch() {
+  const router = useRouter();
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [query, setQuery] = useState('');
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [index, setIndex] = useState<SearchIndex>({ users: [], technicians: [], employers: [], jobs: [] });
+
+  async function ensureLoaded() {
+    if (loaded || loading) return;
+    setLoading(true);
+    try {
+      const [users, technicians, employers, jobs] = await Promise.all([
+        adminFetchList<any>('/admin/manage/users').catch(() => []),
+        adminFetchList<any>('/admin/manage/technicians').catch(() => []),
+        adminFetchList<any>('/admin/manage/employers').catch(() => []),
+        adminFetchList<any>('/admin/manage/jobs').catch(() => []),
+      ]);
+      setIndex({ users, technicians, employers, jobs });
+      setLoaded(true);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    function onDown(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setOpen(false);
+        (document.activeElement as HTMLElement | null)?.blur();
+      }
+    }
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, []);
+
+  const matches = useMemo<SearchItem[]>(() => {
+    const q = query.trim().toLowerCase();
+    if (q.length < 1) return [];
+
+    const items: SearchItem[] = [];
+
+    index.users
+      .filter((u) => [u.name, u.email, u.mobile].filter(Boolean).some((v) => String(v).toLowerCase().includes(q)))
+      .slice(0, 4)
+      .forEach((u) =>
+        items.push({
+          id: u.id,
+          label: u.name || 'Unnamed user',
+          sublabel: u.email || u.mobile || '',
+          href: '/admin/users',
+          kind: 'user',
+        }),
+      );
+
+    index.technicians
+      .filter((t) =>
+        [t.fullName, t.professionalTitle, t.currentCity, t.user?.email, t.user?.mobile]
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(q)),
+      )
+      .slice(0, 4)
+      .forEach((t) =>
+        items.push({
+          id: t.id,
+          label: t.fullName || 'Profile not completed',
+          sublabel: t.professionalTitle || t.user?.email || t.user?.mobile || '',
+          href: '/admin/technicians',
+          kind: 'technician',
+        }),
+      );
+
+    index.employers
+      .filter((e) =>
+        [e.companyName, e.city, e.state, e.user?.email, e.user?.mobile]
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(q)),
+      )
+      .slice(0, 4)
+      .forEach((e) =>
+        items.push({
+          id: e.id,
+          label: e.companyName,
+          sublabel: [e.city, e.state].filter(Boolean).join(', ') || e.user?.email || '',
+          href: '/admin/employers',
+          kind: 'employer',
+        }),
+      );
+
+    index.jobs
+      .filter((j) =>
+        [j.title, j.category, j.city, j.employerProfile?.companyName]
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(q)),
+      )
+      .slice(0, 4)
+      .forEach((j) =>
+        items.push({
+          id: j.id,
+          label: j.title,
+          sublabel: j.employerProfile?.companyName || j.category || '',
+          href: '/admin/jobs',
+          kind: 'job',
+        }),
+      );
+
+    return items;
+  }, [query, index]);
+
+  const groups = useMemo(() => {
+    const map: Record<SearchKind, SearchItem[]> = { user: [], technician: [], employer: [], job: [] };
+    for (const m of matches) map[m.kind].push(m);
+    return map;
+  }, [matches]);
+
+  const showDropdown = open && query.trim().length > 0;
+
+  function goTo(item: SearchItem) {
+    setOpen(false);
+    setQuery('');
+    router.push(item.href);
+  }
+
+  function onEnter(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const first = KIND_ORDER.flatMap((k) => groups[k])[0];
+    if (first) goTo(first);
+  }
+
+  return (
+    <div ref={wrapRef} className="relative hidden w-full max-w-md sm:block">
+      <label className="admin-search-field flex h-11 w-full items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 text-slate-400 transition focus-within:border-indigo-300 focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-500/20">
+        <AIcon name="search" className="h-4 w-4 shrink-0" />
+        <span className="sr-only">Search</span>
+        <input
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => {
+            ensureLoaded();
+            setOpen(true);
+          }}
+          onKeyDown={onEnter}
+          placeholder="Search users, technicians, companies, jobs..."
+          style={{ outline: 'none', boxShadow: 'none', border: 'none', WebkitAppearance: 'none' }}
+          className="admin-global-search-input w-full min-w-0 flex-1 border-0 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-0 focus:outline-none focus:ring-0"
+        />
+        {query && (
+          <button
+            type="button"
+            onClick={() => {
+              setQuery('');
+              setOpen(false);
+            }}
+            className="shrink-0 text-[11px] font-semibold text-slate-500 hover:text-slate-700"
+          >
+            Clear
+          </button>
+        )}
+      </label>
+
+      {showDropdown && (
+        <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-xl ring-1 ring-slate-900/[0.06] shadow-[0_1px_2px_rgba(12,16,19,.04),0_10px_28px_-14px_rgba(15,88,112,.14)] bg-white shadow-2xl ring-1 ring-slate-900/5">
+          {loading && !loaded && (
+            <div className="flex items-center gap-2 p-4 text-sm text-slate-500">
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-300 border-t-indigo-600" />
+              Loading search index...
+            </div>
+          )}
+
+          {loaded && matches.length === 0 && (
+            <div className="p-4 text-sm text-slate-500">
+              No matches for <span className="font-semibold text-slate-700">“{query}”</span>
+            </div>
+          )}
+
+          {loaded && matches.length > 0 && (
+            <div className="max-h-96 overflow-y-auto">
+              {KIND_ORDER.map((kind) => {
+                const group = groups[kind];
+                if (group.length === 0) return null;
+                const meta = KIND_META[kind];
+                return (
+                  <div key={kind} className="border-b border-slate-100 last:border-b-0">
+                    <div className="flex items-center gap-2 px-4 pb-1 pt-3">
+                      <span className={`flex h-5 w-5 items-center justify-center rounded-md bg-gradient-to-br ${meta.tint} text-white`}>
+                        <AIcon name={meta.icon} className="h-3 w-3" />
+                      </span>
+                      <p className="text-[10px] font-bold text-slate-400">
+                        {meta.title}
+                      </p>
+                    </div>
+                    <ul>
+                      {group.map((item) => (
+                        <li key={`${item.kind}-${item.id}`}>
+                          <button
+                            type="button"
+                            onClick={() => goTo(item)}
+                            className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition hover:bg-slate-50"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-semibold text-slate-900">
+                                {item.label}
+                              </p>
+                              {item.sublabel && (
+                                <p className="truncate text-xs text-slate-500">{item.sublabel}</p>
+                              )}
+                            </div>
+                            <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-slate-300" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M9 6l6 6-6 6" />
+                            </svg>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/60 px-4 py-2 text-[11px] text-slate-500">
+            <span>
+              <kbd className="rounded border border-slate-300 bg-white px-1.5 py-0.5 font-sans text-[10px] font-semibold text-slate-600">Enter</kbd>{' '}
+              opens the top match
+            </span>
+            <span>
+              <kbd className="rounded border border-slate-300 bg-white px-1.5 py-0.5 font-sans text-[10px] font-semibold text-slate-600">Esc</kbd>{' '}
+              to close
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Shell                                                              */
+/* ------------------------------------------------------------------ */
+
+export default function AdminShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [alertsOpen, setAlertsOpen] = useState(false);
+  const [pendingReviews, setPendingReviews] = useState<number | null>(null);
+  const [alertsLoading, setAlertsLoading] = useState(false);
+  const [ready, setReady] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+  const alertsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!localStorage.getItem(ADMIN_TOKEN_KEY)) router.replace('/admin/login');
+    else setReady(true);
+  }, [router]);
+
+  useEffect(() => {
+    function closeProfile(event: MouseEvent) {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) setProfileOpen(false);
+      if (alertsRef.current && !alertsRef.current.contains(event.target as Node)) setAlertsOpen(false);
+    }
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') setProfileOpen(false);
+      if (event.key === 'Escape') setAlertsOpen(false);
+    }
+    document.addEventListener('mousedown', closeProfile);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('mousedown', closeProfile);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, []);
+
+  function logout() {
+    localStorage.removeItem(ADMIN_TOKEN_KEY);
+    router.push('/admin/login');
+  }
+
+  async function toggleAlerts() {
+    const nextOpen = !alertsOpen;
+    setAlertsOpen(nextOpen);
+    if (!nextOpen || (pendingReviews !== null && pendingReviews !== -1)) return;
+
+    setAlertsLoading(true);
+    try {
+      const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+      const response = await fetch(`${API}/admin/dashboard`, {
+        headers: { Authorization: `Bearer ${token ?? ''}` },
+      });
+      if (!response.ok) throw new Error('Could not load alerts');
+      const dashboard = await response.json();
+      setPendingReviews(Number(dashboard.stats?.pendingVerifications ?? 0));
+    } catch {
+      setPendingReviews(-1);
+    } finally {
+      setAlertsLoading(false);
+    }
+  }
+
+  if (!ready) return <div className="min-h-screen bg-slate-100" />;
+
+  return (
+    <div className="admin-shell min-h-screen bg-[#f6f7fb] lg:pl-64">
+      <div className="admin-ambient" aria-hidden="true"><span /><span /><i /></div>
+      {open && <div className="fixed inset-0 z-40 bg-slate-900/50 lg:hidden" onClick={() => setOpen(false)} />}
+
+      {/* Sidebar */}
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white text-slate-600 border-r border-slate-200 flex flex-col transition-transform lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="h-[78px] px-5 flex items-center border-b border-slate-200">
+          <img src="/skilho-logo.png" alt="Skilho" className="admin-logo-img" />
+        </div>
+
+        <div className="px-4 pt-4 pb-2 text-[9px] font-extrabold uppercase tracking-[0.16em] text-slate-400">Workspace</div>
+        <nav aria-label="Admin" className="flex-1 overflow-y-auto px-3 pb-3 space-y-1">
+          {NAV.map((n) => {
+            const active = pathname === n.href;
+            return (
+              <Link
+                key={n.href}
+                href={n.href}
+                onClick={() => setOpen(false)}
+                aria-current={active ? 'page' : undefined}
+                className={`admin-nav-item group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-200 ${
+                  active ? 'bg-blue-50 text-blue-700 shadow-[inset_3px_0_0_#155eef]' : 'hover:bg-slate-50 hover:text-slate-900'
+                }`}
+              >
+                <AIcon name={n.icon} />
+                {n.label}
+              </Link>
+            );
+          })}
+        </nav>
+
+      </aside>
+
+      {/* Top bar */}
+      <header className="sticky top-0 z-30 h-[72px] bg-white/80 backdrop-blur-2xl shadow-[0_1px_0_rgba(12,16,19,.06)] px-4 sm:px-6 flex items-center gap-4">
+        <button type="button" onClick={() => setOpen(true)} className="lg:hidden text-slate-600" aria-label="Open menu">
+          <AIcon name="menu" className="w-6 h-6" />
+        </button>
+
+        <GlobalSearch />
+
+        <div className="ml-auto flex items-center gap-3">
+          <ThemeToggle compact />
+          <div className="relative" ref={alertsRef}>
+            <button type="button" onClick={toggleAlerts} className="admin-icon-button relative text-slate-500 hover:text-slate-900" aria-label="Notifications" aria-expanded={alertsOpen}>
+              <AIcon name="bell" className="w-5 h-5" />
+              {(pendingReviews === null || pendingReviews > 0) && <span className="admin-notification-dot" />}
+            </button>
+            {alertsOpen && (
+              <div className="absolute right-0 top-full z-50 mt-3 w-[min(340px,calc(100vw-24px))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+                <div className="border-b border-slate-100 px-4 py-3">
+                  <p className="text-sm font-bold text-slate-900">Admin alerts</p>
+                  <p className="mt-0.5 text-xs text-slate-500">Items that may need your attention</p>
+                </div>
+                <div className="p-4">
+                  {alertsLoading ? (
+                    <p className="text-sm text-slate-500">Loading alerts…</p>
+                  ) : pendingReviews === -1 ? (
+                    <p className="text-sm text-rose-600">Could not load alerts. Please try again.</p>
+                  ) : pendingReviews ? (
+                    <Link href="/admin/companies" onClick={() => setAlertsOpen(false)} className="block rounded-xl border border-slate-200 border-l-4 border-l-blue-500 bg-slate-50 p-3 transition hover:bg-slate-100">
+                      <span className="block text-sm font-semibold text-slate-900">Company reviews needed</span>
+                      <span className="mt-1 block text-xs text-slate-600">{pendingReviews} {pendingReviews === 1 ? 'company is' : 'companies are'} waiting for verification.</span>
+                      <span className="mt-2 block text-xs font-bold text-blue-700">Review companies →</span>
+                    </Link>
+                  ) : (
+                    <p className="text-sm text-slate-500">No pending company reviews.</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="relative" ref={profileRef}>
+            <button
+              type="button"
+              onClick={() => setProfileOpen((current) => !current)}
+              aria-haspopup="menu"
+              aria-expanded={profileOpen}
+              aria-label="Open admin profile"
+              className="flex items-center gap-2 rounded-xl px-1.5 py-1 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+            >
+              <span className="w-9 h-9 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center">A</span>
+              <span className="hidden sm:inline text-sm font-semibold text-slate-900">Admin</span>
+            </button>
+            {profileOpen && (
+              <div role="menu" className="absolute right-0 top-full z-50 mt-3 w-64 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+                <div className="flex items-center gap-3 border-b border-slate-100 p-4">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 font-bold text-white">A</span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-900">Admin</p>
+                    <p className="truncate text-sm text-slate-500">admin@skilho.com</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={logout}
+                  className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-medium text-slate-600 hover:bg-rose-50 hover:text-rose-700"
+                >
+                  <AIcon name="logout" className="h-5 w-5" /> Logout
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+
+      <main className="admin-main p-4 sm:p-7"><div className="admin-page-enter">{children}</div></main>
+    </div>
+  );
+}
