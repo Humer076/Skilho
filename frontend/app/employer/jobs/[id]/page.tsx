@@ -10,8 +10,7 @@ import {
   SPECIALIZATIONS,
   WORK_TYPE_OPTIONS,
 } from '../../../lib/jobOptions';
-
-const API = 'http://localhost:3001';
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://skilho.onrender.com';
 
 const inputClass =
   'w-full border border-gray-300 rounded-lg p-3 text-gray-900 bg-white';
