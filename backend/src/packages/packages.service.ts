@@ -55,6 +55,19 @@ export class PackagesService {
     return this.prisma.package.findMany({ orderBy: { createdAt: 'desc' } });
   }
 
+  // Admin-only purchase/subscription ledger. This reflects recorded subscriptions,
+  // not proof of a real payment when demo activation is being used.
+  async adminPurchaseHistory() {
+    return this.prisma.subscription.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 500,
+      include: {
+        package: true,
+        employerProfile: { include: { user: { select: { id: true, email: true, mobile: true } } } },
+      },
+    });
+  }
+
   async adminCreate(data: {
     name: string;
     tier: string;

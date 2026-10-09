@@ -52,8 +52,8 @@ export class AdminExtraController {
   }
 
   @Post('technicians/:id/verify')
-  verify(@Param('id') id: string, @Body() dto: VerifyDto) {
-    return this.extra.setTechnicianVerified(id, dto.verified);
+  verify(@Req() req: any, @Param('id') id: string, @Body() dto: VerifyDto) {
+    return this.extra.setTechnicianVerified(req.user.sub, id, dto.verified);
   }
 
   @Get('employers')
@@ -67,8 +67,8 @@ export class AdminExtraController {
   }
 
   @Post('jobs/:id/status')
-  jobStatus(@Param('id') id: string, @Body() dto: JobStatusDto) {
-    return this.extra.setJobStatus(id, dto.status);
+  jobStatus(@Req() req: any, @Param('id') id: string, @Body() dto: JobStatusDto) {
+    return this.extra.setJobStatus(req.user.sub, id, dto.status);
   }
 
   @Get('applications')
@@ -82,13 +82,13 @@ export class AdminExtraController {
   }
 
   @Post('skills')
-  addSkill(@Body() dto: SkillDto) {
-    return this.extra.addSkill(dto.name);
+  addSkill(@Req() req: any, @Body() dto: SkillDto) {
+    return this.extra.addSkill(req.user.sub, dto.name);
   }
 
   @Post('skills/:id/active')
-  skillActive(@Param('id') id: string, @Body() dto: ActiveDto) {
-    return this.extra.setSkillActive(id, dto.active);
+  skillActive(@Req() req: any, @Param('id') id: string, @Body() dto: ActiveDto) {
+    return this.extra.setSkillActive(req.user.sub, id, dto.active);
   }
 
   @Get('career')
@@ -97,8 +97,8 @@ export class AdminExtraController {
   }
 
   @Get('reports')
-  reports() {
-    return this.extra.reports();
+  reports(@Query('from') from?: string, @Query('to') to?: string) {
+    return this.extra.reports(from, to);
   }
 
   @Get('me')
@@ -111,3 +111,5 @@ export class AdminExtraController {
     return this.extra.changePassword(req.user.sub, dto.currentPassword, dto.newPassword);
   }
 }
+
+

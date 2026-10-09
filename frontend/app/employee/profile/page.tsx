@@ -9,7 +9,7 @@ import Icon from '../../components/Icon';
 import { CountUp, EASE, rise, stagger } from '../../components/motion';
 import { EMPLOYMENT_OPTIONS } from '../../lib/employeeOptions';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3001';
 const MAX_PHOTO = 2 * 1024 * 1024;
 
 const inputClass =
@@ -135,7 +135,7 @@ const press = { whileHover: { scale: 1.03 }, whileTap: { scale: 0.96 } };
 
 function Ring({ percent }: { percent: number }) {
   return (
-    <div className="relative h-24 w-24 shrink-0">
+    <div className="relative h-20 w-20 sm:h-24 sm:w-24 shrink-0">
       <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90" aria-hidden="true">
         <defs>
           <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
@@ -158,7 +158,7 @@ function Ring({ percent }: { percent: number }) {
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
-        <span className="text-xl font-extrabold text-slate-900">
+        <span className="text-lg sm:text-xl font-extrabold text-slate-900">
           <CountUp value={percent} suffix="%" />
         </span>
         <span className="mt-1 text-[10px] font-medium text-slate-400">complete</span>
@@ -551,7 +551,7 @@ export default function EmployeeProfilePage() {
           {/* ===== Profile hero ===== */}
           <motion.section variants={rise} className="overflow-hidden rounded-2xl ring-1 ring-slate-900/[0.06] shadow-[0_1px_2px_rgba(12,16,19,.04),0_10px_28px_-14px_rgba(15,88,112,.14)] bg-white shadow-sm">
             {/* Compact accent banner */}
-            <div className="relative h-20 sm:h-24 overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-blue-600">
+            <div className="relative h-24 sm:h-28 overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-blue-600">
               <motion.div
                 aria-hidden
                 className="absolute -left-10 -top-20 h-64 w-64 rounded-full bg-cyan-400/30 blur-3xl"
@@ -574,10 +574,13 @@ export default function EmployeeProfilePage() {
 
             <div className="px-5 pb-5 sm:px-6">
               {/* Header row with Avatar + Info on Left, Completeness Ring on Right */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 -mt-10 sm:-mt-12">
-                <div className="flex items-center sm:items-start gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mt-4">
+                
+                {/* Left side: Avatar and Text */}
+                <div className="flex items-end gap-5">
+                  {/* Avatar - Pulled up into the banner */}
                   <motion.div
-                    className="flex h-20 w-20 sm:h-24 sm:w-24 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 shadow-lg shadow-blue-900/20 ring-4 ring-white"
+                    className="flex h-24 w-24 sm:h-28 sm:w-28 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 shadow-lg shadow-blue-900/20 ring-4 ring-white -mt-16 sm:-mt-20"
                     initial={{ scale: 0.7, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ type: 'spring', stiffness: 200, damping: 14, delay: 0.2 }}
@@ -596,7 +599,9 @@ export default function EmployeeProfilePage() {
                       <span className="text-3xl font-bold text-slate-400">{initial}</span>
                     )}
                   </motion.div>
-                  <div className="pt-8 sm:pt-10">
+                  
+                  {/* Name and Title - Aligned to bottom of Avatar */}
+                  <div className="pb-1">
                     <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900">{displayName}</h2>
                     <p className="text-xs sm:text-sm text-slate-500 font-medium">
                       {form.professionalTitle.trim() || 'Add your professional title'}
@@ -604,9 +609,9 @@ export default function EmployeeProfilePage() {
                   </div>
                 </div>
 
-                {/* Profile Completeness Ring */}
-                <div className="flex items-center gap-3 sm:gap-4 self-end sm:self-center pt-2 sm:pt-0">
-                  <div className="text-right">
+                {/* Right side: Profile Completeness Ring - Sits neatly in white space */}
+                <div className="flex items-center gap-3 sm:gap-4 pb-1">
+                  <div className="text-right hidden sm:block">
                     <p className="text-xs sm:text-sm font-semibold text-slate-900">Profile completeness</p>
                     <p className="text-[11px] text-slate-400">Based on the details on this page</p>
                   </div>
@@ -615,7 +620,7 @@ export default function EmployeeProfilePage() {
               </div>
 
               {/* Chips row */}
-              <motion.div layout className="mt-4 flex flex-wrap gap-2">
+              <motion.div layout className="mt-5 flex flex-wrap gap-2">
                 <AnimatePresence>
                   {chips.map((c) => (
                     <motion.span

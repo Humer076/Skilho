@@ -4,11 +4,12 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-const API = 'http://localhost:3000';
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 type Notif = {
   id: string;
   type: string;
+  title?: string | null;
   message: string;
   link: string | null;
   read: boolean;
@@ -122,6 +123,7 @@ export default function NotificationsPage() {
                 <div className="notification-dot"><IconBell /></div>
                 <div className="notification-copy">
                   <strong>{n.read ? 'Notification' : 'New update'}</strong>
+                  {n.title && <p className="font-semibold">{n.title}</p>}
                   <p>{n.message}</p>
                   <time>{new Date(n.createdAt).toLocaleString()}</time>
                 </div>

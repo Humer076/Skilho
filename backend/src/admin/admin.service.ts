@@ -34,6 +34,7 @@ export class AdminService {
     const user = await this.prisma.user.findFirst({
       where: {
         role: 'ADMIN',
+        adminStatus: 'ACTIVE',
         OR: [{ email: identifier }, { mobile: identifier }],
       },
     });
@@ -47,13 +48,66 @@ export class AdminService {
     }
 
     const token = await this.jwt.signAsync({ sub: user.id, role: user.role });
+    await this.prisma.adminAuditLog.create({
+      data: { actorId: user.id, action: 'LOGIN', entityType: 'AdminUser', entityId: user.id, summary: `Admin ${user.email || user.mobile || user.id} signed in` },
+    });
     return {
       token,
-      user: { id: user.id, email: user.email, role: user.role },
+      user: { id: user.id, email: user.email, displayName: user.displayName, role: user.role, adminAccess: user.adminAccess },
     };
   }
 
-  async getDashboard() {
+  async getDashboard(adminAccess = 'SUPER_ADMIN') {
+    if (adminAccess !== 'SUPER_ADMIN') {
+      const emptyStat = { value: 0, change: null };
+      const scoped: any = {
+        access: adminAccess,
+        stats: { totalUsers: emptyStat, technicians: emptyStat, employers: emptyStat, activeJobs: emptyStat, applications: emptyStat, pendingVerifications: 0 },
+        userGrowth: [], distribution: { technicians: 0, employers: 0 }, jobCategories: [], recentUsers: [], pendingCompanies: [], recentApplications: [],
+        roleMetrics: [] as { label: string; value: number; href: string }[],
+      };
+
+      if (adminAccess === 'VERIFICATION') {
+        const pendingStatuses: VerificationStatus[] = ['REGISTRATION_SUBMITTED', 'PENDING_VERIFICATION', 'UNDER_REVIEW'];
+        const [pendingCount, approvedCount, pendingCompanies] = await Promise.all([
+          this.prisma.employerProfile.count({ where: { verificationStatus: { in: pendingStatuses } } }),
+          this.prisma.employerProfile.count({ where: { verificationStatus: 'APPROVED' } }),
+          this.prisma.employerProfile.findMany({ where: { verificationStatus: { in: pendingStatuses } }, orderBy: { createdAt: 'desc' }, take: 5, select: { id: true, companyName: true, companyType: true, city: true, verificationStatus: true, createdAt: true } }),
+        ]);
+        scoped.stats.pendingVerifications = pendingCount;
+        scoped.pendingCompanies = pendingCompanies;
+        scoped.roleMetrics = [
+          { label: 'Companies awaiting review', value: pendingCount, href: '/admin/companies' },
+          { label: 'Approved companies', value: approvedCount, href: '/admin/companies' },
+        ];
+      } else if (adminAccess === 'PAYMENTS') {
+        const [activeSubscriptions, paidPayments, revenue] = await Promise.all([
+          this.prisma.subscription.count({ where: { status: 'ACTIVE' } }),
+          this.prisma.payment.count({ where: { status: 'PAID' } }),
+          this.prisma.payment.aggregate({ where: { status: 'PAID' }, _sum: { amountRupees: true } }),
+        ]);
+        scoped.roleMetrics = [
+          { label: 'Active subscriptions', value: activeSubscriptions, href: '/admin/packages' },
+          { label: 'Verified paid payments', value: paidPayments, href: '/admin/reports' },
+          { label: 'All-time verified revenue (INR)', value: revenue._sum.amountRupees || 0, href: '/admin/reports' },
+        ];
+      } else if (adminAccess === 'CONTENT') {
+        const [total, published, drafts, scheduled] = await Promise.all([
+          this.prisma.siteArticle.count(),
+          this.prisma.siteArticle.count({ where: { status: 'PUBLISHED' } }),
+          this.prisma.siteArticle.count({ where: { status: 'DRAFT' } }),
+          this.prisma.siteArticle.count({ where: { status: 'SCHEDULED' } }),
+        ]);
+        scoped.roleMetrics = [
+          { label: 'Total articles', value: total, href: '/admin/website-content' },
+          { label: 'Published articles', value: published, href: '/admin/website-content' },
+          { label: 'Draft articles', value: drafts, href: '/admin/website-content' },
+          { label: 'Scheduled articles', value: scheduled, href: '/admin/website-content' },
+        ];
+      }
+      return scoped;
+    }
+
     const DAY = 24 * 60 * 60 * 1000;
     const now = new Date();
     const d30 = new Date(now.getTime() - 30 * DAY);
@@ -179,6 +233,7 @@ export class AdminService {
     ]);
 
     return {
+      access: 'SUPER_ADMIN',
       stats: {
         totalUsers: { value: totalUsers, change: change(usersCur, usersPrev) },
         technicians: { value: technicians, change: change(techCur, techPrev) },
@@ -319,6 +374,10 @@ export class AdminService {
       }),
     ]);
 
+    await this.prisma.adminAuditLog.create({
+      data: { actorId: adminId, action: 'STATUS_CHANGE', entityType: 'Employer', entityId: id, summary: `Changed employer verification from ${profile.verificationStatus} to ${newStatus}`, metadata: { note: cleanNote } },
+    });
+
     return { status: newStatus };
   }
 
@@ -338,6 +397,9 @@ export class AdminService {
         visibleToEmployer: false, // internal note, employers never see it
       },
     });
+    await this.prisma.adminAuditLog.create({
+      data: { actorId: adminId, action: 'UPDATE', entityType: 'Employer', entityId: id, summary: 'Added an internal verification note' },
+    });
     return { saved: true };
   }
 
@@ -356,6 +418,9 @@ export class AdminService {
         note: cleanNote,
         visibleToEmployer: true,
       },
+    });
+    await this.prisma.adminAuditLog.create({
+      data: { actorId: adminId, action: 'UPDATE', entityType: 'Employer', entityId: id, summary: 'Requested additional company documents' },
     });
     return { saved: true };
   }

@@ -6,7 +6,7 @@ import { useParams, usePathname, useRouter } from 'next/navigation';
 import { motion, MotionConfig } from 'framer-motion';
 import Icon from '../../components/Icon';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3001';
 
 type Me = {
   id: string;

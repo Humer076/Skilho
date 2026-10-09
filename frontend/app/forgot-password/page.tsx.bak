@@ -1,0 +1,114 @@
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
+
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+
+export default function ForgotPasswordPage() {
+  const [identifier, setIdentifier] = useState('');
+  const [message, setMessage] = useState('');
+  const [otp, setOtp] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [otpRequested, setOtpRequested] = useState(false);
+  const [completed, setCompleted] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+    setMessage('');
+    setLoading(true);
+    try {
+      const res = await fetch(`${API}/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Something went wrong');
+      setMessage(data.message);
+      setOtpRequested(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleReset(e: React.FormEvent) {
+    e.preventDefault(); setError(''); setMessage('');
+    if (newPassword.length < 8) { setError('Use at least 8 characters for your new password.'); return; }
+    if (newPassword !== confirmPassword) { setError('The passwords do not match.'); return; }
+    setLoading(true);
+    try {
+      const res = await fetch(`${API}/auth/reset-password`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: otp.trim(), newPassword }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(Array.isArray(data.message) ? data.message.join(', ') : data.message || 'Could not reset password');
+      setCompleted(true); setMessage('Password updated successfully. You can now sign in.');
+    } catch (err) { setError(err instanceof Error ? err.message : 'Could not reset password'); }
+    finally { setLoading(false); }
+  }
+
+  return (
+    <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(ellipse_at_top_left,_#d9f8f6_0%,_#f5f7ff_38%,_#f7f8fc_75%)] p-3 sm:p-6 lg:p-8">
+      <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-teal-300/20 blur-[100px]" />
+      <div className="absolute -bottom-40 -right-32 h-[28rem] w-[28rem] rounded-full bg-indigo-300/20 blur-[110px]" />
+      <div className="relative mx-auto flex min-h-[calc(100svh-1.5rem)] max-w-6xl sm:min-h-[calc(100svh-3rem)] items-center justify-center">
+        <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} className="grid w-full overflow-hidden rounded-[26px] border border-white/80 bg-white/85 sm:rounded-[32px] shadow-[0_35px_100px_-40px_rgba(15,23,42,.3)] backdrop-blur-xl lg:grid-cols-[.9fr_1.1fr]">
+          <section className="hidden bg-[#0b1020] p-10 text-white lg:flex lg:flex-col lg:justify-between">
+            <div>
+              <Link
+                href="/"
+                aria-label="Skilho home"
+                className="group flex w-fit items-center gap-3 rounded-2xl bg-white px-3.5 py-2.5 shadow-lg shadow-black/20 ring-1 ring-white/10 transition-transform duration-300 hover:scale-[1.02]"
+              >
+                <img
+                  src="/skilho-logo.png"
+                  alt="Skilho"
+                  className="h-9 w-auto max-w-[170px] object-contain"
+                />
+                <span className="sr-only">Skilho</span>
+              </Link>
+              <div className="mt-24"><motion.div initial={{opacity:0,scale:.85,rotate:-8}} animate={{opacity:1,scale:1,rotate:0}} transition={{duration:.55}} className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl border border-teal-200/20 bg-teal-300/10 text-teal-200 shadow-lg shadow-teal-950/20"><svg viewBox="0 0 24 24" fill="none" className="h-7 w-7" stroke="currentColor" strokeWidth="1.7"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><path d="m9.5 15 1.7 1.7 3.5-3.5" strokeLinecap="round" strokeLinejoin="round"/></svg></motion.div><h1 className="text-4xl font-black tracking-tight xl:text-[2.7rem]">A fresh start for<br /><span className="bg-gradient-to-r from-teal-200 to-cyan-300 bg-clip-text text-transparent">your workspace.</span></h1><p className="mt-5 max-w-sm text-sm leading-7 text-white/60">Securely recover your account with a short-lived email code. Your work is waiting for you.</p><div className="mt-8 grid max-w-sm grid-cols-2 gap-3"><div className="rounded-2xl border border-white/10 bg-white/[.05] p-4"><div className="text-xs font-bold text-teal-200">02 MIN</div><p className="mt-1 text-xs text-white/50">Code validity</p></div><div className="rounded-2xl border border-white/10 bg-white/[.05] p-4"><div className="text-xs font-bold text-teal-200">SECURE</div><p className="mt-1 text-xs text-white/50">One-time verification</p></div></div></div>
+            </div>
+            <p className="text-xs text-white/30">Secure account recovery · Skilho</p>
+          </section>
+          <section className="flex items-center p-6 sm:p-10 lg:p-14">
+            <Link href="/" className="text-sm font-bold text-slate-400 hover:text-slate-700">← Skilho</Link>
+            <div className="mx-auto my-6 w-full max-w-md sm:my-8 lg:my-0">
+              <span className="inline-flex rounded-full bg-teal-50 px-3 py-1.5 text-xs font-bold text-teal-700">ACCOUNT RECOVERY</span>
+              <h2 className="mt-4 text-3xl font-black tracking-[-.045em] text-slate-950 sm:text-4xl">Forgot your password?</h2>
+              <p className="mt-3 text-sm leading-6 text-slate-500">We will send a six-digit OTP that expires in two minutes. You can request at most three codes per day.</p>
+              {!otpRequested ? (
+                <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+                  <label className="block"><span className="mb-2 block text-xs font-bold uppercase tracking-[.08em] text-slate-500">Email address</span><input type="email" value={identifier} onChange={(e) => setIdentifier(e.target.value)} required placeholder="you@example.com" className="modern-forgot-input" autoComplete="email" /></label>
+                  {error && <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</div>}
+                  {message && <div role="status" className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">{message}</div>}
+                  <button disabled={loading} className="w-full rounded-2xl bg-gradient-to-r from-teal-600 to-blue-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-teal-600/20 disabled:opacity-60">{loading ? 'Sending code…' : 'Send 6-digit OTP'}</button>
+                  <p className="text-xs leading-5 text-slate-500">The code expires after 2 minutes. For security, the response will not confirm whether an account exists.</p>
+                </form>
+              ) : (
+                <form onSubmit={handleReset} className="mt-8 space-y-5">
+                  <div className="rounded-2xl border border-teal-100 bg-teal-50 px-4 py-3 text-sm text-teal-900">If an account exists for <strong>{identifier}</strong>, a verification code has been sent. Check your inbox.</div>
+                  <label className="block"><span className="mb-2 block text-xs font-bold uppercase tracking-[.08em] text-slate-500">6-digit OTP</span><input inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0,6))} required placeholder="123456" className="modern-forgot-input tracking-[.4em]" /></label>
+                  <label className="block"><span className="mb-2 block text-xs font-bold uppercase tracking-[.08em] text-slate-500">New password</span><input type="password" autoComplete="new-password" minLength={8} value={newPassword} onChange={e => setNewPassword(e.target.value)} required placeholder="At least 8 characters" className="modern-forgot-input" /></label>
+                  <label className="block"><span className="mb-2 block text-xs font-bold uppercase tracking-[.08em] text-slate-500">Confirm new password</span><input type="password" autoComplete="new-password" minLength={8} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required placeholder="Enter it again" className="modern-forgot-input" /></label>
+                  {error && <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</div>}
+                  {message && <div role="status" className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">{message}</div>}
+                  <button disabled={loading || completed} className="w-full rounded-2xl bg-gradient-to-r from-teal-600 to-blue-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-teal-600/20 disabled:opacity-60">{loading ? 'Verifying…' : completed ? 'Password updated' : 'Verify OTP & reset password'}</button>
+                  <button type="button" onClick={() => { setOtpRequested(false); setOtp(''); setMessage(''); setError(''); }} className="w-full rounded-xl py-2 text-sm font-bold text-slate-600 hover:bg-slate-100">Use another email</button>
+                </form>
+              )}
+              <p className="mt-7 text-center text-sm text-slate-500">Remembered it? <Link href="/login/technician" className="font-bold text-teal-700 transition-colors hover:text-blue-700">Back to sign in</Link></p>
+            </div>
+          </section>
+        </motion.div>
+      </div>
+      <style jsx global>{`.modern-forgot-input{width:100%;min-width:0;border:1px solid #e2e8f0;background:#f8fafc;border-radius:15px;padding:14px 15px;outline:none;transition:border-color .2s,box-shadow .2s,background .2s}.modern-forgot-input:focus{background:#fff;border-color:#0d9488;box-shadow:0 0 0 4px rgba(13,148,136,.1)}@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}`}</style>
+    </main>
+  );
+}

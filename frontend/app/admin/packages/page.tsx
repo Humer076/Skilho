@@ -4,7 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import AdminShell, { AIcon, ADMIN_TOKEN_KEY } from '../components/AdminShell';
 import { useRouter } from 'next/navigation';
 
-const API = 'http://localhost:3000';
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+type PurchaseRow = { id: string; createdAt: string; expiresAt: string; status: string; jobCreditsLeft: number; package?: { name?: string; priceRupees?: number }; employerProfile?: { companyName?: string; user?: { email?: string | null; mobile?: string | null } } };
 
 type Pkg = {
   id: string;
@@ -59,6 +61,8 @@ const inputClass = 'w-full rounded-xl border border-slate-200 bg-white px-3.5 py
 export default function AdminPackagesPage() {
   const router = useRouter();
   const [packages, setPackages] = useState<Pkg[]>([]);
+  const [purchases, setPurchases] = useState<PurchaseRow[]>([]);
+  const [purchaseError, setPurchaseError] = useState('');
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -79,6 +83,11 @@ export default function AdminPackagesPage() {
       }
       if (!res.ok) throw new Error(`Could not load packages (error ${res.status})`);
       setPackages(await res.json()); setLoadError('');
+      try {
+        const historyRes = await fetch(`${API}/admin/packages/purchases`, { headers: { Authorization: `Bearer ${t}` } });
+        if (historyRes.ok) { setPurchases(await historyRes.json()); setPurchaseError(''); }
+        else setPurchaseError('Purchase history is not available from the current backend.');
+      } catch { setPurchaseError('Could not load purchase history.'); }
     } catch (err) {
       setLoadError(err instanceof TypeError ? 'Cannot reach the backend. Is it running on port 3000?' : err instanceof Error ? err.message : 'Something went wrong');
     } finally { setLoading(false); }
@@ -170,6 +179,11 @@ export default function AdminPackagesPage() {
               {packages.map((pkg) => { const tier = TIER_STYLE[pkg.tier] ?? TIER_STYLE.NORMAL; return <tr key={pkg.id} className="transition hover:bg-slate-50/70"><td className="px-5 py-4"><div className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600"><AIcon name="package" className="h-4 w-4" /></span><div><p className="font-bold text-slate-900">{pkg.name}</p><p className="text-xs text-slate-400">{[pkg.featuredJobs && 'Featured', pkg.advancedSearch && 'Advanced search', pkg.priorityListing && 'Priority'].filter(Boolean).join(' · ') || 'Standard benefits'}</p></div></div></td><td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-bold ring-1 ${tier.className}`}>{tier.label}</span></td><td className="px-5 py-4 text-sm font-bold text-slate-900">₹{pkg.priceRupees.toLocaleString('en-IN')}</td><td className="px-5 py-4 text-sm text-slate-600">{pkg.durationDays} days</td><td className="px-5 py-4 text-sm text-slate-600">{pkg.jobCredits}</td><td className="px-5 py-4"><span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${pkg.active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}><span className={`h-1.5 w-1.5 rounded-full ${pkg.active ? 'bg-emerald-500' : 'bg-slate-400'}`} />{pkg.active ? 'Active' : 'Inactive'}</span></td><td className="px-5 py-4 text-right"><button type="button" onClick={() => toggleActive(pkg)} disabled={busy} className={`rounded-lg px-3 py-2 text-xs font-bold transition disabled:opacity-40 ${pkg.active ? 'border border-slate-200 bg-white text-slate-600 hover:border-red-200 hover:bg-red-50 hover:text-red-600' : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}>{pkg.active ? 'Deactivate' : 'Activate'}</button></td></tr>; })}
             </tbody></table></div>
           )}
+        </section>
+
+        <section className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_10px_35px_rgba(15,23,42,.05)]">
+          <div className="border-b border-slate-100 px-5 py-4"><h2 className="font-extrabold text-slate-900">Package purchase & subscription history</h2><p className="mt-1 text-xs text-slate-500">Recorded subscriptions, newest first. Demo activations are not verified real payments.</p></div>
+          {purchaseError ? <p className="px-5 py-6 text-sm text-amber-700">{purchaseError}</p> : purchases.length === 0 ? <p className="px-5 py-8 text-sm text-slate-500">No recorded subscriptions yet.</p> : <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-5 py-3">Employer</th><th className="px-5 py-3">Package</th><th className="px-5 py-3">Price</th><th className="px-5 py-3">Purchased at</th><th className="px-5 py-3">Expires</th><th className="px-5 py-3">Status</th></tr></thead><tbody className="divide-y divide-slate-100">{purchases.map((purchase) => <tr key={purchase.id}><td className="px-5 py-3"><div className="font-semibold text-slate-800">{purchase.employerProfile?.companyName || 'Employer'}</div><div className="text-xs text-slate-500">{purchase.employerProfile?.user?.email || purchase.employerProfile?.user?.mobile || '—'}</div></td><td className="px-5 py-3">{purchase.package?.name || 'Package'}</td><td className="px-5 py-3">{typeof purchase.package?.priceRupees === 'number' ? `₹${purchase.package.priceRupees.toLocaleString('en-IN')}` : '—'}</td><td className="whitespace-nowrap px-5 py-3">{purchase.createdAt ? new Date(purchase.createdAt).toLocaleString('en-IN') : '—'}</td><td className="whitespace-nowrap px-5 py-3">{purchase.expiresAt ? new Date(purchase.expiresAt).toLocaleString('en-IN') : '—'}</td><td className="px-5 py-3"><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">{purchase.status || 'ACTIVE'}</span></td></tr>)}</tbody></table></div>}
         </section>
       </div>
     </AdminShell>

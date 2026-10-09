@@ -12,7 +12,7 @@ import {
 } from '../../lib/jobOptions';
 import { postedText, salaryText } from '../../lib/jobFormat';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3001';
 
 type JobDetail = {
   id: string;
@@ -51,23 +51,29 @@ type JobDetail = {
 
 /* shared style strings */
 const CARD =
-  'rounded-3xl border border-white bg-white p-6 shadow-[0_20px_60px_-28px_rgba(109,40,217,0.3)] md:p-8';
-const H2 = 'text-xl font-bold tracking-tight text-slate-950';
+  'rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6';
+const H2 = 'text-base font-bold tracking-tight text-slate-950 sm:text-lg';
 const BTN_PRIMARY =
-  'btn-shine inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-7 py-3 font-semibold text-white shadow-lg shadow-violet-600/25 transition hover:bg-violet-700 active:scale-[0.98] disabled:cursor-default disabled:bg-emerald-600 disabled:shadow-emerald-600/25';
+  'inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-violet-600/20 transition-all duration-200 hover:bg-violet-700 hover:shadow-lg hover:shadow-violet-600/25 focus:outline-none focus:ring-4 focus:ring-violet-500/20 active:scale-[0.98] disabled:cursor-default disabled:bg-emerald-600 disabled:shadow-emerald-600/20';
 const BTN_OUTLINE =
-  'inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-3 font-semibold text-slate-800 transition hover:border-violet-300 hover:bg-violet-50 active:scale-[0.98]';
+  'inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700 focus:outline-none focus:ring-4 focus:ring-violet-500/10 active:scale-[0.98]';
 
 const RISING_BOLTS = [
-  { left: '6%', d: '14s', delay: '0s', size: 'h-6 w-6' },
-  { left: '28%', d: '18s', delay: '4s', size: 'h-8 w-8' },
-  { left: '52%', d: '13s', delay: '8s', size: 'h-5 w-5' },
-  { left: '74%', d: '17s', delay: '2s', size: 'h-7 w-7' },
-  { left: '93%', d: '15s', delay: '6s', size: 'h-6 w-6' },
+  { left: '8%', d: '16s', delay: '0s', size: 'h-5 w-5' },
+  { left: '30%', d: '20s', delay: '5s', size: 'h-6 w-6' },
+  { left: '55%', d: '15s', delay: '9s', size: 'h-4 w-4' },
+  { left: '78%', d: '19s', delay: '3s', size: 'h-6 w-6' },
+  { left: '94%', d: '17s', delay: '7s', size: 'h-5 w-5' },
 ];
 
 /* ---------- icons ---------- */
-function Svg({ children, className = 'h-5 w-5' }: { children: React.ReactNode; className?: string }) {
+function Svg({
+  children,
+  className = 'h-5 w-5',
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -119,7 +125,7 @@ const ClockIcon = () => (
   </Svg>
 );
 const ShieldIcon = () => (
-  <Svg className="h-6 w-6">
+  <Svg className="h-5 w-5">
     <path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6l8-3z" />
     <path d="M9 12l2 2 4-4" />
   </Svg>
@@ -129,7 +135,7 @@ const HeartIcon = ({ filled }: { filled: boolean }) => (
     viewBox="0 0 24 24"
     width="20"
     height="20"
-    className="h-5 w-5"
+    className="h-[18px] w-[18px]"
     fill={filled ? 'currentColor' : 'none'}
     stroke="currentColor"
     strokeWidth="1.8"
@@ -141,7 +147,7 @@ const HeartIcon = ({ filled }: { filled: boolean }) => (
   </svg>
 );
 const ShareIcon = () => (
-  <Svg>
+  <Svg className="h-[18px] w-[18px]">
     <circle cx="6" cy="12" r="2.5" />
     <circle cx="18" cy="6" r="2.5" />
     <circle cx="18" cy="18" r="2.5" />
@@ -152,39 +158,19 @@ const ShareIcon = () => (
 /* ---------- shared pieces ---------- */
 function Header() {
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur">
-      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
-        <Link href="/" className="flex items-center gap-1.5" aria-label="Skilho home">
-          <BoltIcon className="h-7 w-7 fill-violet-600 text-violet-600" />
-          <span className="text-[1.7rem] font-extrabold tracking-tight text-slate-900">Skilho</span>
+    <header className="sticky top-0 z-50 border-b border-slate-100 bg-white/95 backdrop-blur-md">
+      <div className="mx-auto flex h-16 max-w-7xl items-center px-4 sm:px-6 lg:px-8">
+        <Link
+          href="/"
+          className="flex shrink-0 items-center"
+          aria-label="Skilho home"
+        >
+          <img
+            src="/skilho-logo.png"
+            alt="Skilho"
+            className="h-8 w-auto object-contain transition-transform duration-200 hover:scale-[1.03] sm:h-9"
+          />
         </Link>
-
-        <nav aria-label="Main" className="hidden items-center gap-8 text-base font-medium md:flex">
-          <Link href="/" className="transition hover:text-violet-600">
-            Home
-          </Link>
-          <Link href="/jobs" className="text-violet-600">
-            Find jobs
-          </Link>
-          <Link href="/register/employer" className="transition hover:text-violet-600">
-            Post a job
-          </Link>
-        </nav>
-
-        <div className="flex items-center gap-3">
-          <Link
-            href="/login/employee"
-            className="hidden rounded-lg border border-slate-200 bg-white px-5 py-2.5 font-medium text-slate-900 transition hover:border-violet-300 hover:bg-violet-50 sm:inline-flex"
-          >
-            Technician login
-          </Link>
-          <Link
-            href="/login/employer"
-            className="btn-shine inline-flex items-center rounded-lg bg-violet-600 px-5 py-2.5 font-semibold text-white transition hover:bg-violet-700"
-          >
-            Employer login
-          </Link>
-        </div>
       </div>
     </header>
   );
@@ -193,19 +179,25 @@ function Header() {
 function AnimatedBackground() {
   return (
     <>
-      <div className="blob animate-blob-a -left-24 top-0 h-80 w-80 bg-violet-300/50" />
-      <div className="blob animate-blob-b right-[-5rem] top-10 h-96 w-96 bg-fuchsia-200/60" />
-      <div className="blob animate-blob-c bottom-[-4rem] left-1/3 h-72 w-72 bg-indigo-200/60" />
+      <div className="blob animate-blob-a -left-24 top-0 h-72 w-72 bg-violet-300/40" />
+      <div className="blob animate-blob-b right-[-5rem] top-10 h-80 w-80 bg-fuchsia-200/50" />
+      <div className="blob animate-blob-c bottom-[-4rem] left-1/3 h-64 w-64 bg-indigo-200/50" />
       {RISING_BOLTS.map((b, i) => (
         <span
           key={i}
           className="rise-bolt"
-          style={{ left: b.left, ['--d' as string]: b.d, ['--delay' as string]: b.delay } as React.CSSProperties}
+          style={
+            {
+              left: b.left,
+              ['--d' as string]: b.d,
+              ['--delay' as string]: b.delay,
+            } as React.CSSProperties
+          }
         >
           <BoltIcon className={`${b.size} fill-current`} />
         </span>
       ))}
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/0 to-white/50" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/0 to-white/60" />
     </>
   );
 }
@@ -233,7 +225,8 @@ export default function JobDetailPage() {
         if (res.status === 404) {
           throw new Error('This job is no longer available.');
         }
-        if (!res.ok) throw new Error(`Could not load the job (error ${res.status})`);
+        if (!res.ok)
+          throw new Error(`Could not load the job (error ${res.status})`);
         return res.json();
       })
       .then((data: JobDetail) => {
@@ -269,7 +262,9 @@ export default function JobDetailPage() {
       }
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return;
-      setNotice('Could not share automatically. Copy the address from the browser.');
+      setNotice(
+        'Could not share automatically. Copy the address from the browser.',
+      );
     }
   }
 
@@ -331,15 +326,15 @@ export default function JobDetailPage() {
         <section className="hero-bg hero-bg-pan relative overflow-hidden border-b border-violet-100">
           <AnimatedBackground />
           <div
-            className="relative mx-auto max-w-7xl animate-pulse space-y-4 px-6 py-12"
+            className="relative mx-auto max-w-7xl animate-pulse space-y-4 px-4 py-10 sm:px-6 lg:px-8"
             aria-label="Loading job"
           >
-            <div className="h-4 w-28 rounded bg-violet-100" />
-            <div className="h-56 rounded-2xl bg-white/80" />
+            <div className="h-3.5 w-24 rounded bg-violet-100" />
+            <div className="h-48 rounded-2xl bg-white/80" />
           </div>
         </section>
-        <div className="mx-auto max-w-7xl animate-pulse px-6 py-10">
-          <div className="h-72 rounded-3xl bg-slate-100" />
+        <div className="mx-auto max-w-7xl animate-pulse px-4 py-8 sm:px-6 lg:px-8">
+          <div className="h-64 rounded-2xl bg-slate-100" />
         </div>
       </main>
     );
@@ -352,16 +347,19 @@ export default function JobDetailPage() {
         <Header />
         <section className="hero-bg hero-bg-pan relative min-h-[70vh] overflow-hidden">
           <AnimatedBackground />
-          <div className="relative mx-auto max-w-md px-6 py-20">
+          <div className="relative mx-auto max-w-md px-4 py-16 sm:px-6">
             <Reveal from="zoom">
-              <div className="float-card rounded-3xl p-10 text-center">
-                <span className="mx-auto flex h-16 w-16 animate-floaty items-center justify-center rounded-2xl bg-red-50 text-red-500">
-                  <BoltIcon className="h-8 w-8" />
+              <div className="float-card rounded-2xl p-8 text-center">
+                <span className="mx-auto flex h-14 w-14 animate-floaty items-center justify-center rounded-2xl bg-red-50 text-red-500">
+                  <BoltIcon className="h-7 w-7" />
                 </span>
-                <p role="alert" className="mt-5 text-lg font-semibold text-red-700">
+                <p
+                  role="alert"
+                  className="mt-4 text-base font-semibold text-red-700"
+                >
                   {error || 'Job not found'}
                 </p>
-                <Link href="/jobs" className={`${BTN_PRIMARY} mt-6`}>
+                <Link href="/jobs" className={`${BTN_PRIMARY} mt-5`}>
                   Browse other jobs
                 </Link>
               </div>
@@ -390,7 +388,11 @@ export default function JobDetailPage() {
     .filter(Boolean)
     .join(', ');
 
-  const salary = salaryText(job.salaryMin, job.salaryMax, job.salaryNegotiable);
+  const salary = salaryText(
+    job.salaryMin,
+    job.salaryMax,
+    job.salaryNegotiable,
+  );
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-white pb-24 text-slate-900 antialiased lg:pb-0">
@@ -399,56 +401,63 @@ export default function JobDetailPage() {
       {/* ================= HERO / TITLE CARD ================= */}
       <section className="hero-bg hero-bg-pan relative overflow-hidden border-b border-violet-100">
         <AnimatedBackground />
-        <div className="relative mx-auto max-w-7xl px-6 pb-12 pt-10">
-          <Link href="/jobs" className="text-sm font-semibold text-violet-700 hover:underline">
-            ← Back to jobs
-          </Link>
-
-          <Reveal from="zoom" className="mt-5">
-            <section className="float-card rounded-3xl p-6 md:p-9">
-              <div className="flex items-start gap-5">
+        <div className="relative mx-auto max-w-7xl px-4 pb-10 pt-8 sm:px-6 lg:px-8">
+          <Reveal from="zoom">
+            <section className="float-card rounded-2xl p-5 sm:p-7">
+              <div className="flex items-start gap-4">
                 <div
-                  className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-2xl font-extrabold text-white shadow-lg shadow-violet-500/30"
+                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-xl font-extrabold text-white shadow-lg shadow-violet-500/30"
                   aria-hidden="true"
                 >
                   {job.company.name[0]?.toUpperCase()}
                 </div>
                 <div className="min-w-0">
-                  <h1 className="text-3xl font-extrabold leading-tight tracking-tight text-slate-950 md:text-4xl">
+                  <h1 className="text-2xl font-extrabold leading-tight tracking-tight text-slate-950 sm:text-3xl">
                     {job.title}
                   </h1>
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <span className="text-lg font-medium text-slate-700">{job.company.name}</span>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                    <span className="text-base font-medium text-slate-700">
+                      {job.company.name}
+                    </span>
                     {job.company.verified && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
-                        <Check className="h-3.5 w-3.5" /> Verified company
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                        <Check className="h-3 w-3" /> Verified
                       </span>
                     )}
                   </div>
-                  <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700">
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-700">
                       <PinIcon />
                       {job.city}, {job.state}
                     </span>
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-700">
                       <ClockIcon />
                       {postedText(job.publishedAt ?? job.createdAt)}
                     </span>
-                    <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700 ring-1 ring-inset ring-violet-200">
+                    <span className="rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700 ring-1 ring-inset ring-violet-200 sm:text-xs">
                       {labelOf(WORK_TYPE_OPTIONS, job.workType)}
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-7 flex flex-wrap items-end justify-between gap-5">
+              <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
                 <div>
-                  <p className="text-sm font-medium text-slate-500">Salary</p>
-                  <p className="text-3xl font-extrabold tracking-tight text-violet-700">{salary}</p>
+                  <p className="text-xs font-medium text-slate-500 sm:text-sm">
+                    Salary
+                  </p>
+                  <p className="text-2xl font-extrabold tracking-tight text-violet-700 sm:text-3xl">
+                    {salary}
+                  </p>
                 </div>
 
-                <div className="hidden flex-wrap gap-3 lg:flex">
-                  <button type="button" onClick={apply} disabled={applied} className={BTN_PRIMARY}>
+                <div className="hidden flex-wrap gap-2.5 lg:flex">
+                  <button
+                    type="button"
+                    onClick={apply}
+                    disabled={applied}
+                    className={BTN_PRIMARY}
+                  >
                     {applied ? (
                       <>
                         <Check /> Applied
@@ -457,35 +466,53 @@ export default function JobDetailPage() {
                       'Apply now'
                     )}
                   </button>
-                  <button type="button" onClick={toggleSave} className={BTN_OUTLINE}>
+                  <button
+                    type="button"
+                    onClick={toggleSave}
+                    className={BTN_OUTLINE}
+                  >
                     <span className={saved ? 'text-rose-500' : ''}>
                       <HeartIcon filled={saved} />
                     </span>
                     {saved ? 'Saved' : 'Save job'}
                   </button>
-                  <button type="button" onClick={shareJob} className={BTN_OUTLINE}>
+                  <button
+                    type="button"
+                    onClick={shareJob}
+                    className={BTN_OUTLINE}
+                  >
                     <ShareIcon /> Share
                   </button>
                 </div>
               </div>
 
               {/* on small screens: save + share here, apply is in the bottom bar */}
-              <div className="mt-5 flex flex-wrap gap-3 lg:hidden">
-                <button type="button" onClick={toggleSave} className={BTN_OUTLINE}>
+              <div className="mt-4 flex flex-wrap gap-2.5 lg:hidden">
+                <button
+                  type="button"
+                  onClick={toggleSave}
+                  className={BTN_OUTLINE}
+                >
                   <span className={saved ? 'text-rose-500' : ''}>
                     <HeartIcon filled={saved} />
                   </span>
                   {saved ? 'Saved' : 'Save job'}
                 </button>
-                <button type="button" onClick={shareJob} className={BTN_OUTLINE}>
+                <button
+                  type="button"
+                  onClick={shareJob}
+                  className={BTN_OUTLINE}
+                >
                   <ShareIcon /> Share
                 </button>
               </div>
 
               <div aria-live="polite">
-                {notice && <p className="mt-4 text-sm text-emerald-700">{notice}</p>}
+                {notice && (
+                  <p className="mt-4 text-sm text-emerald-700">{notice}</p>
+                )}
                 {applyMsg && (
-                  <p className="mt-4 inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                  <p className="mt-4 inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-3.5 py-2 text-sm font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
                     <Check /> {applyMsg}
                   </p>
                 )}
@@ -497,15 +524,24 @@ export default function JobDetailPage() {
               </div>
 
               {showAccountHint && (
-                <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-                  <p className="font-semibold">Log in as a technician to continue.</p>
+                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                  <p className="font-semibold">
+                    Log in as a technician to continue.
+                  </p>
                   <p className="mt-1">
-                    You need a technician account with a profile to apply or save jobs.{' '}
-                    <Link href="/register/employee" className="font-semibold underline">
+                    You need a technician account with a profile to apply or
+                    save jobs.{' '}
+                    <Link
+                      href="/register/employee"
+                      className="font-semibold underline"
+                    >
                       Create an account
                     </Link>{' '}
                     or{' '}
-                    <Link href="/login/employee" className="font-semibold underline">
+                    <Link
+                      href="/login/employee"
+                      className="font-semibold underline"
+                    >
                       log in
                     </Link>
                     .
@@ -519,25 +555,27 @@ export default function JobDetailPage() {
 
       {/* ================= BODY ================= */}
       <div className="relative overflow-hidden bg-gradient-to-b from-violet-50/40 to-white">
-        <div className="blob animate-blob-b right-0 top-40 h-96 w-96 bg-violet-200/30" />
-        <div className="relative mx-auto grid max-w-7xl items-start gap-6 px-6 py-10 lg:grid-cols-3">
+        <div className="blob animate-blob-b right-0 top-40 h-80 w-80 bg-violet-200/30" />
+        <div className="relative mx-auto grid max-w-7xl items-start gap-5 px-4 py-8 sm:px-6 lg:grid-cols-3 lg:gap-6 lg:px-8">
           {/* Main column */}
-          <div className="space-y-6 lg:col-span-2">
+          <div className="space-y-5 lg:col-span-2">
             <Reveal>
               <section className={CARD}>
                 <h2 className={`${H2} mb-3`}>Job description</h2>
-                <p className="max-w-prose whitespace-pre-line leading-relaxed text-slate-700">{job.description}</p>
+                <p className="max-w-prose whitespace-pre-line text-sm leading-relaxed text-slate-700">
+                  {job.description}
+                </p>
 
                 {job.specializations.length > 0 && (
                   <>
-                    <h3 className="mb-2 mt-7 text-sm font-bold text-violet-700">
+                    <h3 className="mb-2 mt-6 text-xs font-bold uppercase tracking-wide text-violet-700">
                       Technician specialization
                     </h3>
                     <div className="flex flex-wrap gap-2">
                       {job.specializations.map((s) => (
                         <span
                           key={s}
-                          className="rounded-full bg-violet-50 px-3.5 py-1.5 text-sm font-medium text-violet-800 ring-1 ring-inset ring-violet-200 transition hover:-translate-y-0.5 hover:bg-violet-100"
+                          className="rounded-full bg-violet-50 px-3 py-1 text-xs font-medium text-violet-800 ring-1 ring-inset ring-violet-200 transition hover:-translate-y-0.5 hover:bg-violet-100"
                         >
                           {s}
                         </span>
@@ -548,33 +586,45 @@ export default function JobDetailPage() {
               </section>
             </Reveal>
 
-            {(job.workingHours || job.weeklyHolidays || benefits.length > 0) && (
+            {(job.workingHours ||
+              job.weeklyHolidays ||
+              benefits.length > 0) && (
               <Reveal delay={80}>
                 <section className={CARD}>
-                  <h2 className={`${H2} mb-5`}>Work conditions and benefits</h2>
-                  <dl className="grid gap-4 sm:grid-cols-2">
+                  <h2 className={`${H2} mb-4`}>
+                    Work conditions and benefits
+                  </h2>
+                  <dl className="grid gap-3 sm:grid-cols-2">
                     {job.workingHours && (
-                      <div className="rounded-xl bg-slate-50 p-4">
-                        <dt className="text-sm text-slate-500">Working hours</dt>
-                        <dd className="mt-0.5 font-semibold text-slate-900">{job.workingHours}</dd>
+                      <div className="rounded-xl bg-slate-50 p-3.5">
+                        <dt className="text-xs text-slate-500">
+                          Working hours
+                        </dt>
+                        <dd className="mt-0.5 text-sm font-semibold text-slate-900">
+                          {job.workingHours}
+                        </dd>
                       </div>
                     )}
                     {job.weeklyHolidays && (
-                      <div className="rounded-xl bg-slate-50 p-4">
-                        <dt className="text-sm text-slate-500">Weekly holidays</dt>
-                        <dd className="mt-0.5 font-semibold text-slate-900">{job.weeklyHolidays}</dd>
+                      <div className="rounded-xl bg-slate-50 p-3.5">
+                        <dt className="text-xs text-slate-500">
+                          Weekly holidays
+                        </dt>
+                        <dd className="mt-0.5 text-sm font-semibold text-slate-900">
+                          {job.weeklyHolidays}
+                        </dd>
                       </div>
                     )}
                   </dl>
                   {benefits.length > 0 && (
-                    <ul className="mt-5 grid gap-3 sm:grid-cols-2">
+                    <ul className="mt-4 grid gap-2.5 sm:grid-cols-2">
                       {benefits.map((b) => (
                         <li
                           key={b}
-                          className="flex items-center gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/50 px-4 py-3 text-slate-800"
+                          className="flex items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50/50 px-3.5 py-2.5 text-sm text-slate-800"
                         >
-                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
-                            <Check className="h-3.5 w-3.5" />
+                          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
+                            <Check className="h-3 w-3" />
                           </span>
                           <span className="font-medium">{b}</span>
                         </li>
@@ -587,17 +637,23 @@ export default function JobDetailPage() {
 
             {(job.requiredCertificates || job.interviewProcess) && (
               <Reveal delay={80}>
-                <section className={`${CARD} space-y-6`}>
+                <section className={`${CARD} space-y-5`}>
                   {job.requiredCertificates && (
                     <div>
-                      <h2 className={`${H2} mb-2`}>Required certificates</h2>
-                      <p className="text-slate-700">{job.requiredCertificates}</p>
+                      <h2 className={`${H2} mb-2`}>
+                        Required certificates
+                      </h2>
+                      <p className="text-sm text-slate-700">
+                        {job.requiredCertificates}
+                      </p>
                     </div>
                   )}
                   {job.interviewProcess && (
                     <div>
                       <h2 className={`${H2} mb-2`}>Interview process</h2>
-                      <p className="whitespace-pre-line text-slate-700">{job.interviewProcess}</p>
+                      <p className="whitespace-pre-line text-sm text-slate-700">
+                        {job.interviewProcess}
+                      </p>
                     </div>
                   )}
                 </section>
@@ -606,19 +662,30 @@ export default function JobDetailPage() {
           </div>
 
           {/* Sidebar */}
-          <aside className="space-y-6 lg:sticky lg:top-28">
+          <aside className="space-y-5 lg:sticky lg:top-24">
             <Reveal from="right">
-              <section className="overflow-hidden rounded-2xl border border-white bg-white shadow-[0_20px_60px_-28px_rgba(109,40,217,0.35)]">
-                <div className="relative overflow-hidden bg-gradient-to-br from-violet-600 via-violet-500 to-fuchsia-500 p-6 text-white">
-                  <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/15" />
-                  <h2 className="text-sm font-semibold text-violet-100">Job overview</h2>
-                  <p className="relative mt-2 text-2xl font-extrabold tracking-tight">{salary}</p>
+              <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div className="relative overflow-hidden bg-gradient-to-br from-violet-600 via-violet-500 to-fuchsia-500 p-5 text-white">
+                  <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-white/15" />
+                  <h2 className="text-xs font-semibold text-violet-100">
+                    Job overview
+                  </h2>
+                  <p className="relative mt-1.5 text-xl font-extrabold tracking-tight sm:text-2xl">
+                    {salary}
+                  </p>
                 </div>
-                <dl className="divide-y divide-slate-100 p-6">
+                <dl className="divide-y divide-slate-100 p-5">
                   {overview.map(([name, value]) => (
-                    <div key={name} className="flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0">
-                      <dt className="text-sm text-slate-500">{name}</dt>
-                      <dd className="text-right text-sm font-semibold text-slate-900">{value}</dd>
+                    <div
+                      key={name}
+                      className="flex items-start justify-between gap-4 py-2.5 first:pt-0 last:pb-0"
+                    >
+                      <dt className="text-xs text-slate-500 sm:text-sm">
+                        {name}
+                      </dt>
+                      <dd className="text-right text-xs font-semibold text-slate-900 sm:text-sm">
+                        {value}
+                      </dd>
                     </div>
                   ))}
                 </dl>
@@ -626,23 +693,27 @@ export default function JobDetailPage() {
             </Reveal>
 
             <Reveal from="right" delay={100}>
-              <section className={CARD.replace('md:p-8', '')}>
+              <section className={CARD}>
                 <div className="flex items-center gap-3">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-50 text-lg font-extrabold text-violet-700">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-base font-extrabold text-violet-700">
                     {job.company.name[0]?.toUpperCase()}
                   </span>
-                  <h2 className="text-lg font-bold leading-tight text-slate-950">About {job.company.name}</h2>
+                  <h2 className="text-base font-bold leading-tight text-slate-950 sm:text-lg">
+                    About {job.company.name}
+                  </h2>
                 </div>
                 {companyPlace && (
-                  <p className="mt-3 flex items-center gap-1.5 text-sm text-slate-500">
+                  <p className="mt-3 flex items-center gap-1.5 text-xs text-slate-500 sm:text-sm">
                     <PinIcon /> {companyPlace}
                   </p>
                 )}
                 {job.company.technicianCount != null && (
-                  <p className="mt-1 text-sm text-slate-500">{job.company.technicianCount} technicians</p>
+                  <p className="mt-1 text-xs text-slate-500 sm:text-sm">
+                    {job.company.technicianCount} technicians
+                  </p>
                 )}
                 {job.company.description && (
-                  <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-700">
+                  <p className="mt-3 whitespace-pre-line text-xs leading-relaxed text-slate-700 sm:text-sm">
                     {job.company.description}
                   </p>
                 )}
@@ -650,16 +721,17 @@ export default function JobDetailPage() {
             </Reveal>
 
             <Reveal from="right" delay={200}>
-              <section className="rounded-3xl border border-violet-100 bg-violet-50/60 p-6 text-sm text-slate-600">
+              <section className="rounded-2xl border border-violet-100 bg-violet-50/60 p-5 text-xs text-slate-600 sm:text-sm">
                 <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-violet-600 shadow-sm">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-violet-600 shadow-sm">
                     <ShieldIcon />
                   </span>
                   <p className="font-bold text-slate-950">Your privacy</p>
                 </div>
                 <p className="mt-3 leading-relaxed">
-                  Your phone number and email are shared with the employer only when you apply.
-                  Skilho never asks you to pay to apply for a job.
+                  Your phone number and email are shared with the employer
+                  only when you apply. Skilho never asks you to pay to apply
+                  for a job.
                 </p>
               </section>
             </Reveal>
@@ -671,10 +743,19 @@ export default function JobDetailPage() {
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 p-3 backdrop-blur lg:hidden">
         <div className="mx-auto flex max-w-lg items-center gap-3">
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-bold text-slate-950">{job.title}</p>
-            <p className="truncate text-xs font-semibold text-violet-700">{salary}</p>
+            <p className="truncate text-sm font-bold text-slate-950">
+              {job.title}
+            </p>
+            <p className="truncate text-xs font-semibold text-violet-700">
+              {salary}
+            </p>
           </div>
-          <button type="button" onClick={apply} disabled={applied} className={`${BTN_PRIMARY} px-6 py-2.5`}>
+          <button
+            type="button"
+            onClick={apply}
+            disabled={applied}
+            className={`${BTN_PRIMARY} px-5 py-2.5`}
+          >
             {applied ? (
               <>
                 <Check /> Applied

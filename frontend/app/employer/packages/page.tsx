@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { motion, MotionConfig } from 'framer-motion';
 import Icon from '../../components/Icon';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3001';
 
 type Pkg = { id: string; name: string; tier: string; priceRupees: number; durationDays: number; jobCredits: number; featuredJobs: boolean; advancedSearch: boolean; priorityListing: boolean };
 type ActiveSub = { id: string; jobCreditsLeft: number; expiresAt: string; package: Pkg } | null;
@@ -32,6 +32,7 @@ export default function PackagesPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [checkoutPkg, setCheckoutPkg] = useState<Pkg | null>(null);
 
   const load = useCallback(async () => {
     const t = localStorage.getItem('skilho_token');
@@ -52,13 +53,18 @@ export default function PackagesPage() {
   useEffect(() => { load(); }, [load]);
 
   async function buyPackage(pkg: Pkg) {
-    if (!window.confirm(`Activate the ${pkg.name} package for Rs. ${pkg.priceRupees}? (Test mode — real payment comes next)`)) return;
+    setCheckoutPkg(pkg);
+  }
+
+  async function confirmDemoPayment() {
+    const pkg = checkoutPkg;
+    if (!pkg) return;
     setError(''); setMessage(''); setBusy(true);
     try {
       const res = await fetch(`${API}/employer/packages/${pkg.id}/test-activate`, { method: 'POST', headers: { Authorization: `Bearer ${localStorage.getItem('skilho_token') ?? ''}` } });
       const data = await res.json();
       if (!res.ok) throw new Error(Array.isArray(data.message) ? data.message.join(', ') : data.message || 'Could not activate package');
-      setMessage(`${pkg.name} package activated successfully.`); await load();
+      setMessage(`Demo payment successful · ${pkg.name} package activated. No real money was charged.`); setCheckoutPkg(null); await load();
     } catch (e) { setError(e instanceof Error ? e.message : 'Could not activate package'); }
     finally { setBusy(false); }
   }
@@ -74,6 +80,6 @@ export default function PackagesPage() {
     <section className={`pricing-grid count-${Math.min(packages.length, 3)}`}>{packages.map((pkg, i) => { const popular = i === Math.min(1, packages.length - 1); return <motion.article key={pkg.id} className={`price-card ${popular ? 'popular' : ''}`} initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * .08 }} whileHover={{ y: -7 }}>
       {popular && <span className="popular-ribbon">MOST POPULAR</span>}<div className="price-top"><span className="price-tier">{pkg.tier || (popular ? 'Growth' : 'Starter')}</span><h3>{pkg.name}</h3><p>For {pkg.durationDays} days</p></div><div className="price"><small>₹</small>{pkg.priceRupees.toLocaleString('en-IN')}<span>/ plan</span></div><div className="credit-pill"><strong>{pkg.jobCredits}</strong> job posting credits</div><ul><li><i>✓</i> {pkg.featuredJobs ? 'Featured job visibility' : 'Standard job visibility'}</li><li><i>✓</i> {pkg.advancedSearch ? 'Advanced candidate search' : 'Candidate discovery tools'}</li><li><i>✓</i> {pkg.priorityListing ? 'Priority listing & reach' : 'Standard listing'}</li><li><i>✓</i> Employer dashboard & analytics</li></ul><button className={popular ? 'price-btn primary' : 'price-btn'} disabled={busy} onClick={() => buyPackage(pkg)}>{busy ? 'Activating…' : 'Choose plan'} <Icon name="chevronRight" /></button></motion.article>; })}</section>
     <section className="pricing-trust"><div><strong>Designed for growing teams</strong><span>Upgrade when your hiring volume grows. Your dashboard stays the same.</span></div><div className="trust-points"><span>✓ Verified candidates</span><span>✓ Secure activation</span><span>✓ Clear credits</span></div></section>
-    <p className="pricing-note">Test mode: package activation is instant for your submission demo. Production payments can be connected later.</p>
-  </div></main></div></MotionConfig>;
+    <p className="pricing-note">Demo checkout only: no real money is collected. Production payments require a provider integration and server-side payment verification.</p>
+  </div></main>{checkoutPkg && <div className="sk-checkout-overlay" role="presentation"><section className="sk-checkout-modal" role="dialog" aria-modal="true" aria-labelledby="sk-checkout-title"><button type="button" className="sk-checkout-close" aria-label="Close checkout" onClick={() => setCheckoutPkg(null)}>×</button><div className="sk-checkout-mark">✓</div><span className="biz-eyebrow">SECURE DEMO CHECKOUT</span><h2 id="sk-checkout-title">Confirm your package</h2><p className="sk-checkout-description">You’re selecting <strong>{checkoutPkg.name}</strong> for {checkoutPkg.durationDays} days.</p><div className="sk-checkout-total"><span>Demo total</span><strong>₹{checkoutPkg.priceRupees.toLocaleString('en-IN')}</strong></div><div className="sk-checkout-warning"><strong>Test mode only</strong><span>This simulates a successful checkout. No card details are requested and no real payment is processed.</span></div><button type="button" className="price-btn primary sk-checkout-confirm" disabled={busy} onClick={confirmDemoPayment}>{busy ? 'Processing demo…' : 'Simulate successful payment'} <Icon name="chevronRight" /></button><button type="button" className="sk-checkout-cancel" onClick={() => setCheckoutPkg(null)} disabled={busy}>Cancel</button></section></div>} </div></MotionConfig>;
 }

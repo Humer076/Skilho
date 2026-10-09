@@ -31,6 +31,18 @@
 $ npm install
 ```
 
+## Password reset email
+
+Password reset emails are sent through [Resend](https://resend.com). Add these settings to `backend/.env`; verify the sender domain in Resend first:
+
+```env
+RESEND_API_KEY=re_your_api_key
+EMAIL_FROM="Skilho <no-reply@your-verified-domain.com>"
+FRONTEND_URL=http://localhost:3001
+```
+
+For production, set `FRONTEND_URL` to the deployed website URL. The reset link expires after 30 minutes. If email settings are missing or delivery fails, no reset link is logged and the token is invalidated.
+
 ## Compile and run the project
 
 ```bash

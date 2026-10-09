@@ -1,3 +1,4 @@
+
 import {
   Body,
   Controller,
@@ -22,7 +23,7 @@ import { UpdateEmployeeProfileDto } from './dto/update-employee-profile.dto';
 import { EmployeeService } from './employee.service';
 import { PhotoService } from './photo.service';
 
-const MAX_PHOTO_SIZE = 2 * 1024 * 1024; // 2 MB
+const MAX_PHOTO_SIZE = 2 * 1024 * 1024;
 
 class PrivacyDto {
   @IsBoolean()
@@ -53,7 +54,10 @@ export class EmployeeController {
   }
 
   @Put('profile')
-  updateProfile(@Req() req: any, @Body() dto: UpdateEmployeeProfileDto) {
+  updateProfile(
+    @Req() req: any,
+    @Body() dto: UpdateEmployeeProfileDto,
+  ) {
     this.ensureEmployee(req);
     return this.employee.updateProfile(req.user.sub, dto);
   }
@@ -78,7 +82,9 @@ export class EmployeeController {
 
   @Post('photo')
   @UseInterceptors(
-    FileInterceptor('file', { limits: { fileSize: MAX_PHOTO_SIZE, files: 1 } }),
+    FileInterceptor('file', {
+      limits: { fileSize: MAX_PHOTO_SIZE, files: 1 },
+    }),
   )
   uploadPhoto(
     @Req() req: any,
@@ -92,12 +98,15 @@ export class EmployeeController {
   @Get('photo')
   async getPhoto(@Req() req: any, @Res({ passthrough: true }) res: any) {
     this.ensureEmployee(req);
+
     const { filePath, mimeType } = await this.photo.getOwn(req.user.sub);
+
     res.set({
       'Content-Type': mimeType,
       'X-Content-Type-Options': 'nosniff',
       'Cache-Control': 'private, no-store',
     });
+
     return new StreamableFile(createReadStream(filePath));
   }
 
@@ -105,5 +114,12 @@ export class EmployeeController {
   removePhoto(@Req() req: any) {
     this.ensureEmployee(req);
     return this.photo.remove(req.user.sub);
+  }
+
+  // Delete only the account belonging to the authenticated technician.
+  @Delete('account')
+  async deleteAccount(@Req() req: any) {
+    this.ensureEmployee(req);
+    return this.employee.deleteAccount(req.user.sub);
   }
 }

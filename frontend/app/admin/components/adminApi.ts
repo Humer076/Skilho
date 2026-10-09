@@ -1,4 +1,4 @@
-export const API = 'http://localhost:3000';
+export const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const TOKEN_KEY = 'skilho_admin_token';
 
 /** Calls the backend with the admin token. Sends the admin to login if the session is invalid. */
@@ -23,7 +23,7 @@ export async function adminFetch<T = any>(path: string, init: RequestInit = {}):
     throw new Error('Cannot reach the backend. Is it running on port 3000?');
   }
 
-  if (res.status === 401 || res.status === 403) {
+  if (res.status === 401) {
     localStorage.removeItem(TOKEN_KEY);
     window.location.href = '/admin/login';
     throw new Error('Session expired. Please log in again.');

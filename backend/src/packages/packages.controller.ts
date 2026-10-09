@@ -98,9 +98,18 @@ export class PackagesController {
     if (req.user.role !== 'EMPLOYER') {
       throw new ForbiddenException('Employers only');
     }
+    if (process.env.NODE_ENV === 'production') {
+      throw new ForbiddenException('Test package activation is disabled in production.');
+    }
     const profile = await this.packages.findEmployerProfileId(req.user.sub);
     return this.packages.activateSubscription(profile, id);
   }
+  @Get('admin/packages/purchases')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  adminPurchaseHistory() {
+    return this.packages.adminPurchaseHistory();
+  }
+
   @Get('admin/packages')
   @UseGuards(JwtAuthGuard, AdminGuard)
   adminList() {

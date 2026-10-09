@@ -1,0 +1,191 @@
+'use client';
+
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import AdminShell, { AIcon, ADMIN_TOKEN_KEY } from '../components/AdminShell';
+import { useRouter } from 'next/navigation';
+
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+
+type PurchaseRow = { id: string; createdAt: string; expiresAt: string; status: string; jobCreditsLeft: number; package?: { name?: string; priceRupees?: number }; employerProfile?: { companyName?: string; user?: { email?: string | null; mobile?: string | null } } };
+
+type Pkg = {
+  id: string;
+  name: string;
+  tier: string;
+  priceRupees: number;
+  durationDays: number;
+  jobCredits: number;
+  featuredJobs: boolean;
+  advancedSearch: boolean;
+  priorityListing: boolean;
+  active: boolean;
+};
+
+type FormState = {
+  name: string;
+  tier: string;
+  priceRupees: string;
+  durationDays: string;
+  jobCredits: string;
+  featuredJobs: boolean;
+  advancedSearch: boolean;
+  priorityListing: boolean;
+};
+
+const EMPTY_FORM: FormState = {
+  name: '', tier: 'NORMAL', priceRupees: '', durationDays: '30', jobCredits: '',
+  featuredJobs: false, advancedSearch: false, priorityListing: false,
+};
+
+const TIER_STYLE: Record<string, { label: string; className: string }> = {
+  NORMAL: { label: 'Normal', className: 'bg-slate-100 text-slate-700 ring-slate-200' },
+  GOLD: { label: 'Gold', className: 'bg-amber-50 text-amber-700 ring-amber-200' },
+  CUSTOM: { label: 'Custom', className: 'bg-violet-50 text-violet-700 ring-violet-200' },
+};
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return <label className="block"><span className="mb-1.5 block text-xs font-bold uppercase tracking-[0.08em] text-slate-500">{label}</span>{children}</label>;
+}
+
+function CheckboxPill({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <label className={`inline-flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition ${checked ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}>
+      <input type="checkbox" className="h-4 w-4 accent-blue-600" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+      {label}
+    </label>
+  );
+}
+
+const inputClass = 'w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10';
+
+export default function AdminPackagesPage() {
+  const router = useRouter();
+  const [packages, setPackages] = useState<Pkg[]>([]);
+  const [purchases, setPurchases] = useState<PurchaseRow[]>([]);
+  const [purchaseError, setPurchaseError] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+
+  const token = () => localStorage.getItem(ADMIN_TOKEN_KEY) ?? '';
+  const load = useCallback(async () => {
+    const t = localStorage.getItem(ADMIN_TOKEN_KEY);
+    if (!t) return router.replace('/admin/login');
+    try {
+      const res = await fetch(`${API}/admin/packages`, { headers: { Authorization: `Bearer ${t}` } });
+      if (res.status === 401 || res.status === 403) {
+        localStorage.removeItem(ADMIN_TOKEN_KEY);
+        return router.replace('/admin/login');
+      }
+      if (!res.ok) throw new Error(`Could not load packages (error ${res.status})`);
+      setPackages(await res.json()); setLoadError('');
+      try {
+        const historyRes = await fetch(`${API}/admin/packages/purchases`, { headers: { Authorization: `Bearer ${t}` } });
+        if (historyRes.ok) { setPurchases(await historyRes.json()); setPurchaseError(''); }
+        else setPurchaseError('Purchase history is not available from the current backend.');
+      } catch { setPurchaseError('Could not load purchase history.'); }
+    } catch (err) {
+      setLoadError(err instanceof TypeError ? 'Cannot reach the backend. Is it running on port 3000?' : err instanceof Error ? err.message : 'Something went wrong');
+    } finally { setLoading(false); }
+  }, [router]);
+
+  useEffect(() => { load(); }, [load]);
+  const activeCount = useMemo(() => packages.filter((p) => p.active).length, [packages]);
+  const avgPrice = useMemo(() => packages.length ? Math.round(packages.reduce((s, p) => s + p.priceRupees, 0) / packages.length) : 0, [packages]);
+  const setValue = (key: keyof FormState, value: string | boolean) => setForm((prev) => ({ ...prev, [key]: value }));
+
+  async function createPackage(e: React.FormEvent) {
+    e.preventDefault(); setError(''); setMessage(''); setBusy(true);
+    try {
+      const res = await fetch(`${API}/admin/packages`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` },
+        body: JSON.stringify({ name: form.name.trim(), tier: form.tier, priceRupees: Number(form.priceRupees), durationDays: Number(form.durationDays), jobCredits: Number(form.jobCredits), featuredJobs: form.featuredJobs, advancedSearch: form.advancedSearch, priorityListing: form.priorityListing }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(Array.isArray(data.message) ? data.message.join(', ') : data.message || 'Could not create package');
+      setMessage('Package created successfully.'); setForm(EMPTY_FORM); setShowForm(false); await load();
+    } catch (err) { setError(err instanceof Error ? err.message : 'Could not create package'); }
+    finally { setBusy(false); }
+  }
+
+  async function toggleActive(pkg: Pkg) {
+    setError(''); setMessage(''); setBusy(true);
+    try {
+      const res = await fetch(`${API}/admin/packages/${pkg.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` }, body: JSON.stringify({ active: !pkg.active }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Could not update package');
+      setMessage(`${pkg.name} is now ${!pkg.active ? 'active' : 'inactive'}.`); await load();
+    } catch (err) { setError(err instanceof Error ? err.message : 'Could not update package'); }
+    finally { setBusy(false); }
+  }
+
+  return (
+    <AdminShell>
+      <div className="mx-auto max-w-[1400px]">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-blue-600"><AIcon name="package" className="h-4 w-4" /> Commercial controls</div>
+            <h1 className="text-3xl font-extrabold tracking-[-0.035em] text-slate-900">Packages</h1>
+            <p className="mt-1 text-sm text-slate-500">Manage employer plans, credits and access features from one place.</p>
+          </div>
+          <button type="button" onClick={() => setShowForm((v) => !v)} className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-slate-900/10 transition hover:-translate-y-0.5 hover:bg-slate-800">
+            <span className="text-lg leading-none">{showForm ? '×' : '+'}</span>{showForm ? 'Close form' : 'New package'}
+          </button>
+        </div>
+
+        {message && <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">✓ {message}</div>}
+        {error && <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">! {error}</div>}
+
+        <div className="mb-6 grid gap-4 sm:grid-cols-3">
+          {[
+            ['Total plans', packages.length.toString(), 'All configured employer plans'],
+            ['Active plans', activeCount.toString(), 'Currently available for purchase'],
+            ['Average price', `₹${avgPrice.toLocaleString('en-IN')}`, 'Average plan price'],
+          ].map(([label, value, hint]) => (
+            <div key={label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_30px_rgba(15,23,42,.05)]">
+              <p className="text-xs font-bold uppercase tracking-[0.08em] text-slate-400">{label}</p>
+              <p className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900">{value}</p>
+              <p className="mt-1 text-xs text-slate-500">{hint}</p>
+            </div>
+          ))}
+        </div>
+
+        {showForm && (
+          <form onSubmit={createPackage} className="mb-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_40px_rgba(15,23,42,.07)]">
+            <div className="mb-5 flex items-center gap-3 border-b border-slate-100 pb-4">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600"><AIcon name="package" /></span>
+              <div><h2 className="font-extrabold text-slate-900">Create package</h2><p className="text-xs text-slate-500">Define pricing and employer benefits.</p></div>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <Field label="Package name"><input required className={inputClass} value={form.name} onChange={(e) => setValue('name', e.target.value)} placeholder="Starter Plan" /></Field>
+              <Field label="Tier"><select className={inputClass} value={form.tier} onChange={(e) => setValue('tier', e.target.value)}><option value="NORMAL">Normal</option><option value="GOLD">Gold</option><option value="CUSTOM">Custom / Demand-based</option></select></Field>
+              <Field label="Price (₹)"><input required type="number" min={0} className={inputClass} value={form.priceRupees} onChange={(e) => setValue('priceRupees', e.target.value)} placeholder="4999" /></Field>
+              <Field label="Duration (days)"><input required type="number" min={1} className={inputClass} value={form.durationDays} onChange={(e) => setValue('durationDays', e.target.value)} /></Field>
+              <Field label="Job credits"><input required type="number" min={0} className={inputClass} value={form.jobCredits} onChange={(e) => setValue('jobCredits', e.target.value)} placeholder="10" /></Field>
+            </div>
+            <div className="mt-5"><p className="mb-2 text-xs font-bold uppercase tracking-[0.08em] text-slate-500">Included features</p><div className="flex flex-wrap gap-2"><CheckboxPill label="Featured jobs" checked={form.featuredJobs} onChange={(v) => setValue('featuredJobs', v)} /><CheckboxPill label="Advanced search" checked={form.advancedSearch} onChange={(v) => setValue('advancedSearch', v)} /><CheckboxPill label="Priority listing" checked={form.priorityListing} onChange={(v) => setValue('priorityListing', v)} /></div></div>
+            <div className="mt-6 flex justify-end gap-2 border-t border-slate-100 pt-4"><button type="button" onClick={() => setShowForm(false)} className="rounded-xl px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50">Cancel</button><button type="submit" disabled={busy} className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-blue-600/20 hover:bg-blue-700 disabled:opacity-50">{busy ? 'Saving…' : 'Create package'}</button></div>
+          </form>
+        )}
+
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_10px_35px_rgba(15,23,42,.05)]">
+          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4"><div><h2 className="font-extrabold text-slate-900">Plan catalogue</h2><p className="mt-0.5 text-xs text-slate-500">Control which plans employers can purchase.</p></div><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">{activeCount} active</span></div>
+          {loading ? <div className="p-10 text-center text-sm text-slate-500">Loading packages…</div> : loadError ? <div className="p-10 text-center"><p className="text-sm font-semibold text-red-600">{loadError}</p><button onClick={load} className="mt-3 rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white">Retry</button></div> : packages.length === 0 ? <div className="p-12 text-center"><div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400"><AIcon name="package" /></div><p className="mt-3 font-bold text-slate-700">No packages yet</p><p className="mt-1 text-sm text-slate-400">Create the first employer plan to get started.</p></div> : (
+            <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left"><thead className="bg-slate-50 text-[11px] font-bold uppercase tracking-[0.07em] text-slate-500"><tr><th className="px-5 py-3.5">Plan</th><th className="px-5 py-3.5">Tier</th><th className="px-5 py-3.5">Price</th><th className="px-5 py-3.5">Duration</th><th className="px-5 py-3.5">Credits</th><th className="px-5 py-3.5">Status</th><th className="px-5 py-3.5 text-right">Action</th></tr></thead><tbody className="divide-y divide-slate-100">
+              {packages.map((pkg) => { const tier = TIER_STYLE[pkg.tier] ?? TIER_STYLE.NORMAL; return <tr key={pkg.id} className="transition hover:bg-slate-50/70"><td className="px-5 py-4"><div className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600"><AIcon name="package" className="h-4 w-4" /></span><div><p className="font-bold text-slate-900">{pkg.name}</p><p className="text-xs text-slate-400">{[pkg.featuredJobs && 'Featured', pkg.advancedSearch && 'Advanced search', pkg.priorityListing && 'Priority'].filter(Boolean).join(' · ') || 'Standard benefits'}</p></div></div></td><td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-bold ring-1 ${tier.className}`}>{tier.label}</span></td><td className="px-5 py-4 text-sm font-bold text-slate-900">₹{pkg.priceRupees.toLocaleString('en-IN')}</td><td className="px-5 py-4 text-sm text-slate-600">{pkg.durationDays} days</td><td className="px-5 py-4 text-sm text-slate-600">{pkg.jobCredits}</td><td className="px-5 py-4"><span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${pkg.active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}><span className={`h-1.5 w-1.5 rounded-full ${pkg.active ? 'bg-emerald-500' : 'bg-slate-400'}`} />{pkg.active ? 'Active' : 'Inactive'}</span></td><td className="px-5 py-4 text-right"><button type="button" onClick={() => toggleActive(pkg)} disabled={busy} className={`rounded-lg px-3 py-2 text-xs font-bold transition disabled:opacity-40 ${pkg.active ? 'border border-slate-200 bg-white text-slate-600 hover:border-red-200 hover:bg-red-50 hover:text-red-600' : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}>{pkg.active ? 'Deactivate' : 'Activate'}</button></td></tr>; })}
+            </tbody></table></div>
+          )}
+        </section>
+
+        <section className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_10px_35px_rgba(15,23,42,.05)]">
+          <div className="border-b border-slate-100 px-5 py-4"><h2 className="font-extrabold text-slate-900">Package purchase & subscription history</h2><p className="mt-1 text-xs text-slate-500">Recorded subscriptions, newest first. Demo activations are not verified real payments.</p></div>
+          {purchaseError ? <p className="px-5 py-6 text-sm text-amber-700">{purchaseError}</p> : purchases.length === 0 ? <p className="px-5 py-8 text-sm text-slate-500">No recorded subscriptions yet.</p> : <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-5 py-3">Employer</th><th className="px-5 py-3">Package</th><th className="px-5 py-3">Price</th><th className="px-5 py-3">Purchased at</th><th className="px-5 py-3">Expires</th><th className="px-5 py-3">Status</th></tr></thead><tbody className="divide-y divide-slate-100">{purchases.map((purchase) => <tr key={purchase.id}><td className="px-5 py-3"><div className="font-semibold text-slate-800">{purchase.employerProfile?.companyName || 'Employer'}</div><div className="text-xs text-slate-500">{purchase.employerProfile?.user?.email || purchase.employerProfile?.user?.mobile || '—'}</div></td><td className="px-5 py-3">{purchase.package?.name || 'Package'}</td><td className="px-5 py-3">{typeof purchase.package?.priceRupees === 'number' ? `₹${purchase.package.priceRupees.toLocaleString('en-IN')}` : '—'}</td><td className="whitespace-nowrap px-5 py-3">{purchase.createdAt ? new Date(purchase.createdAt).toLocaleString('en-IN') : '—'}</td><td className="whitespace-nowrap px-5 py-3">{purchase.expiresAt ? new Date(purchase.expiresAt).toLocaleString('en-IN') : '—'}</td><td className="px-5 py-3"><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">{purchase.status || 'ACTIVE'}</span></td></tr>)}</tbody></table></div>}
+        </section>
+      </div>
+    </AdminShell>
+  );
+}

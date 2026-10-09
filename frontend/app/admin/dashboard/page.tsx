@@ -5,10 +5,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AdminShell, { AIcon, ADMIN_TOKEN_KEY } from '../components/AdminShell';
 
-const API = 'http://localhost:3000';
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 type Stat = { value: number; change: number | null };
 type Dashboard = {
+  access?: string;
+  roleMetrics?: { label: string; value: number; href: string }[];
   stats: {
     totalUsers: Stat;
     technicians: Stat;
@@ -357,7 +359,7 @@ export default function AdminDashboardPage() {
       )}
 
       {data && (
-        <div className="mx-auto max-w-7xl space-y-6">
+        data.access && data.access !== 'SUPER_ADMIN' ? <ScopedDashboard data={data} today={today} /> : <div className="mx-auto max-w-7xl space-y-6">
           {/* ---------- Header ---------- */}
           <div className="ad-up flex flex-wrap items-end justify-between gap-3">
             <div>
@@ -597,4 +599,26 @@ export default function AdminDashboardPage() {
       )}
     </AdminShell>
   );
+}
+
+function ScopedDashboard({ data, today }: { data: Dashboard; today: string }) {
+  const headings: Record<string, string> = {
+    VERIFICATION: 'Verification dashboard',
+    PAYMENTS: 'Payments dashboard',
+    CONTENT: 'Website content dashboard',
+  };
+  return <div className="mx-auto max-w-7xl space-y-5">
+    <header className="flex flex-wrap items-end justify-between gap-3">
+      <div><h1 className="text-2xl font-extrabold tracking-tight text-slate-900">{headings[data.access || ''] || 'Admin dashboard'}</h1><p className="mt-1 text-sm text-slate-500">Your dashboard shows the sections assigned to your admin access.</p></div>
+      <p className="rounded-full border border-slate-200 bg-white/70 px-3.5 py-1.5 text-sm text-slate-600">{today}</p>
+    </header>
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {(data.roleMetrics || []).map((metric) => <Link key={metric.label} href={metric.href} className="surface rounded-xl p-5 transition hover:-translate-y-0.5">
+        <p className="text-sm text-slate-500">{metric.label}</p><p className="mt-2 text-3xl font-bold tabular-nums text-slate-900">{metric.value.toLocaleString('en-IN')}</p>
+      </Link>)}
+    </div>
+    {data.access === 'VERIFICATION' && <Card title="Pending company verifications" icon="shield">
+      {!data.pendingCompanies.length ? <Empty text="No companies are waiting for review." /> : <div className="ad-table overflow-x-auto"><table className="table-premium"><thead><tr><th>Company</th><th>Submitted</th><th>Status</th><th>Review</th></tr></thead><tbody>{data.pendingCompanies.map((company) => <tr key={company.id}><td className="font-semibold text-slate-900">{company.companyName}</td><td>{fmtDate(company.createdAt)}</td><td>{nice(company.verificationStatus)}</td><td><Link href="/admin/companies" className="btn-primary !px-3 !py-1.5 !text-xs">Review</Link></td></tr>)}</tbody></table></div>}
+    </Card>}
+  </div>;
 }

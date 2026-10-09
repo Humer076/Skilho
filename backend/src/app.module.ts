@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { CandidateEngagementModule } from './candidate-engagement/candidate-engagement.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { EmployerModule } from './employer/employer.module';
@@ -13,6 +14,7 @@ import { TechniciansModule } from './technicians/technicians.module';
 import { ApplicationsModule } from './applications/applications.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PackagesModule } from './packages/packages.module';
+import { ChatbotModule } from './chatbot/chatbot.module';
 
 @Module({
   imports: [
@@ -27,7 +29,9 @@ import { PackagesModule } from './packages/packages.module';
     TechniciansModule,
     ApplicationsModule,
     NotificationsModule,
-    PackagesModule,
+        PackagesModule,
+    ChatbotModule,
+    CandidateEngagementModule,
   ],
   controllers: [AppController],
   providers: [AppService],

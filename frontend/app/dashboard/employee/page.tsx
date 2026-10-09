@@ -8,7 +8,7 @@ import AuthImage from '../../components/AuthImage';
 import Icon from '../../components/Icon';
 import { CountUp, EASE } from '../../components/motion';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 type Profile = {
   fullName: string | null;
@@ -64,20 +64,15 @@ const STATUS_BADGES: Record<string, { label: string; bg: string; text: string; d
 function EmptyApplicationsIllustration() {
   return (
     <div className="relative w-24 h-20 flex items-center justify-center mb-1">
-      {/* Floating Sparkles */}
       <span className="absolute top-2 left-4 text-sky-400 text-sm select-none">✦</span>
       <span className="absolute top-1 right-5 text-sky-300 text-xs select-none">✦</span>
       <span className="absolute bottom-3 left-5 text-sky-300 text-[10px] select-none">✦</span>
       <span className="absolute bottom-4 right-2 text-sky-400 text-xs select-none">✦</span>
-
-      {/* Document Sheet */}
       <div className="relative w-14 h-18 bg-sky-50/90 rounded-xl border border-sky-100 shadow-sm flex flex-col justify-center px-2.5 py-3 gap-1.5">
         <div className="h-1 w-6 bg-sky-200/90 rounded-full" />
         <div className="h-1 w-8 bg-sky-200/90 rounded-full" />
         <div className="h-1 w-5 bg-sky-200/90 rounded-full" />
       </div>
-
-      {/* Magnifying Glass Overlay */}
       <div className="absolute -bottom-1 -right-1 w-11 h-11 flex items-center justify-center">
         <svg viewBox="0 0 32 32" className="w-10 h-10 drop-shadow-sm" fill="none">
           <circle cx="13" cy="13" r="7.5" fill="#DBEAFE" stroke="#2563EB" strokeWidth="2.5" />
@@ -132,6 +127,56 @@ export default function EmployeeDashboardPage() {
   const [recommendedJobs, setRecommendedJobs] = useState<RecommendedJobItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmation !== 'DELETE' || deletingAccount) {
+      return;
+    }
+
+    const token = localStorage.getItem('skilho_token');
+
+    if (!token) {
+      router.replace('/login/employee');
+      return;
+    }
+
+    setDeletingAccount(true);
+    setDeleteError('');
+
+    try {
+      const response = await fetch(`${API}/employee/account`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(
+          typeof data.message === 'string'
+            ? data.message
+            : 'Unable to delete your account. Please try again.',
+        );
+      }
+
+      localStorage.removeItem('skilho_token');
+      router.replace('/login/employee');
+    } catch (err) {
+      setDeleteError(
+        err instanceof Error
+          ? err.message
+          : 'Unable to delete your account. Please try again.',
+      );
+      setDeletingAccount(false);
+    }
+  };
 
   useEffect(() => {
     const token = localStorage.getItem('skilho_token');
@@ -259,11 +304,21 @@ export default function EmployeeDashboardPage() {
     };
   }, [router]);
 
-  const percent = 100;
+  // Calculate Profile Completion dynamically based on user data
+  const percent = useMemo(() => {
+    if (!profile) return 0;
+    let score = 0;
+    if (profile.fullName) score += 20;
+    if (profile.professionalTitle) score += 20;
+    if (profile.currentCity && profile.currentState) score += 20;
+    if (profile.totalExperienceMonths && profile.totalExperienceMonths > 0) score += 20;
+    if (skillCount > 0) score += 20;
+    return score;
+  }, [profile, skillCount]);
 
-  // Formatted Name
+  // Formatted Name (No fake fallback)
   const formattedName = useMemo(() => {
-    if (!profile?.fullName) return 'MD Humer';
+    if (!profile?.fullName) return 'Technician'; // Generic fallback instead of fake name
     const words = profile.fullName.trim().split(/\s+/);
     if (words.length >= 2 && words[0].toUpperCase() === 'MD') {
       const second = words[1].charAt(0).toUpperCase() + words[1].slice(1).toLowerCase();
@@ -302,10 +357,12 @@ export default function EmployeeDashboardPage() {
   }
 
   const initial = (profile.fullName?.trim()[0] || 'T').toUpperCase();
-  const locationText = [profile.currentCity?.trim(), profile.currentState?.trim()].filter(Boolean).join(', ') || 'Bengaluru, Karnataka';
+  
+  // Dynamic Location Text (No fake fallback)
+  const locationText = [profile.currentCity?.trim(), profile.currentState?.trim()].filter(Boolean).join(', ') || 'Location not specified';
 
-  // Formatted Experience
-  let expString = '3 yrs 3 mo experience';
+  // Dynamic Experience Text (No fake fallback)
+  let expString = 'Fresher'; 
   if (profile.totalExperienceMonths && profile.totalExperienceMonths > 0) {
     const y = Math.floor(profile.totalExperienceMonths / 12);
     const m = profile.totalExperienceMonths % 12;
@@ -337,7 +394,7 @@ export default function EmployeeDashboardPage() {
       icon: 'tool' as const,
       iconBg: 'bg-[#FFEDD5]',
       iconColor: 'text-[#EA580C]',
-      linkText: 'Manage your skills',
+      linkText: effectiveSkillCount === 0 ? 'Add your skills' : 'Manage your skills',
       linkColor: 'text-[#EA580C]',
       href: '/employee/skills',
       isProgress: false,
@@ -348,7 +405,7 @@ export default function EmployeeDashboardPage() {
       icon: 'barChart' as const,
       iconBg: 'bg-[#DCFCE7]',
       iconColor: 'text-[#16A34A]',
-      linkText: 'View career journey',
+      linkText: careerCount === 0 ? 'Add career journey' : 'View career journey',
       linkColor: 'text-[#16A34A]',
       href: '/employee/career',
       isProgress: false,
@@ -376,7 +433,6 @@ export default function EmployeeDashboardPage() {
           transition={{ duration: 0.5, ease: EASE }}
           className="employee-welcome relative overflow-hidden rounded-2xl text-white p-6 sm:p-7 shadow-sm"
         >
-          {/* Subtle Ambient Curved Rings on Right */}
           <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-1/2 overflow-hidden">
             <div className="absolute -right-24 -top-24 w-[420px] h-[420px] rounded-full border border-white/10 bg-gradient-to-br from-white/[0.04] to-transparent" />
             <div className="absolute -right-40 -bottom-40 w-[500px] h-[500px] rounded-full border border-white/[0.07]" />
@@ -400,13 +456,15 @@ export default function EmployeeDashboardPage() {
                   )}
                 </div>
 
-                {/* Available Status Dot */}
-                <span
-                  title="Available immediately"
-                  className="absolute -bottom-1 -right-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-[#10b981] ring-2 ring-white"
-                >
-                  <span className="h-1.5 w-1.5 rounded-full bg-white" />
-                </span>
+                {/* Available Status Dot - Only shows if immediateJoining is true */}
+                {profile.immediateJoining && (
+                  <span
+                    title="Available immediately"
+                    className="absolute -bottom-1 -right-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-[#10b981] ring-2 ring-white"
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                  </span>
+                )}
               </div>
 
               {/* Technician Info */}
@@ -419,7 +477,7 @@ export default function EmployeeDashboardPage() {
                 <div className="text-white/85 text-xs sm:text-sm font-medium flex flex-wrap items-center gap-x-2.5 gap-y-1">
                   <span className="inline-flex items-center gap-1.5">
                     <Icon name="briefcase" className="w-3.5 h-3.5 text-white/70" />
-                    <span>{profile.professionalTitle || 'iPhone Expert'}</span>
+                    <span>{profile.professionalTitle || 'Add your professional title'}</span>
                   </span>
                   <span className="text-white/40">•</span>
                   <span className="inline-flex items-center gap-1.5">
@@ -433,12 +491,19 @@ export default function EmployeeDashboardPage() {
                   </span>
                 </div>
 
-                {/* Availability Badge */}
+                {/* Availability Badge - Conditional */}
                 <div className="mt-3">
-                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0c6b58]/80 text-[#a7f3d0] border border-[#10b981]/30 backdrop-blur-sm text-xs font-medium">
-                    <span className="h-2 w-2 rounded-full bg-[#22c55e]" />
-                    <span>Available immediately</span>
-                  </span>
+                  {profile.immediateJoining ? (
+                    <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0c6b58]/80 text-[#a7f3d0] border border-[#10b981]/30 backdrop-blur-sm text-xs font-medium">
+                      <span className="h-2 w-2 rounded-full bg-[#22c55e]" />
+                      <span>Available immediately</span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800/80 text-slate-300 border border-slate-500/30 backdrop-blur-sm text-xs font-medium">
+                      <span className="h-2 w-2 rounded-full bg-slate-400" />
+                      <span>Not available immediately</span>
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -466,7 +531,6 @@ export default function EmployeeDashboardPage() {
               className="group bg-white rounded-2xl border border-slate-200/80 p-5 flex flex-col justify-between shadow-xs hover:shadow-md transition-all duration-200 min-h-[148px]"
             >
               <div>
-                {/* Icon on Left, Label + Stat stacked beside it */}
                 <div className="flex items-start gap-3.5">
                   <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${stat.iconBg} ${stat.iconColor}`}>
                     <Icon name={stat.icon} className="w-4 h-4" />
@@ -483,7 +547,6 @@ export default function EmployeeDashboardPage() {
                   </div>
                 </div>
 
-                {/* Progress bar only for Profile Completion */}
                 {stat.isProgress && (
                   <div className="mt-2.5 w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
                     <div
@@ -494,7 +557,6 @@ export default function EmployeeDashboardPage() {
                 )}
               </div>
 
-              {/* Bottom colored link with arrow */}
               <div className="mt-3 flex items-center justify-between text-xs font-semibold">
                 <span className={`${stat.linkColor} group-hover:underline`}>{stat.linkText}</span>
                 <span className={`${stat.linkColor} transition-transform group-hover:translate-x-0.5`}>→</span>
@@ -505,7 +567,6 @@ export default function EmployeeDashboardPage() {
 
         {/* 2-Column Core Layout */}
         <div className="dashboard-main-grid grid grid-cols-1 items-start gap-4">
-          {/* Main Left Section (~60% width) */}
           <div className="dashboard-left-column min-w-0 space-y-4">
             {/* Recent Applications Card */}
             <div className="dashboard-applications-card min-w-0 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs sm:p-6">
@@ -528,7 +589,6 @@ export default function EmployeeDashboardPage() {
               </div>
 
               {applications.length === 0 ? (
-                /* Empty state matching the design screenshot */
                 <div className="py-5 px-4 flex flex-col items-center justify-center text-center">
                   <EmptyApplicationsIllustration />
                   <h3 className="text-sm sm:text-base font-bold text-slate-900 mt-2">
@@ -598,42 +658,40 @@ export default function EmployeeDashboardPage() {
               )}
             </div>
 
-
             <section className="dashboard-skills-card min-w-0 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs sm:p-6">
-          <div className="mb-4 flex min-w-0 flex-wrap items-center justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                <Icon name="tool" className="h-4 w-4" />
+              <div className="mb-4 flex min-w-0 flex-wrap items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                    <Icon name="tool" className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="text-base font-bold text-slate-900">Your Technical Skills</h2>
+                    <p className="text-xs text-slate-500">Key skills you’ve added to your profile.</p>
+                  </div>
+                </div>
+                <Link href="/employee/skills" className="shrink-0 text-xs font-semibold text-blue-600 transition hover:text-blue-700">
+                  Edit skills →
+                </Link>
               </div>
-              <div className="min-w-0">
-                <h2 className="text-base font-bold text-slate-900">Your Technical Skills</h2>
-                <p className="text-xs text-slate-500">Key skills you’ve added to your profile.</p>
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                {skillsToDisplay.map((skillName) => (
+                  <span key={skillName} className="inline-flex max-w-full items-center rounded-full border border-blue-100/60 bg-[#F0F5FA] px-3.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-blue-50">
+                    {skillName}
+                  </span>
+                ))}
+                {extraSkillsCount > 0 && (
+                  <Link href="/employee/skills" className="inline-flex shrink-0 items-center rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-100">
+                    +{extraSkillsCount} more
+                  </Link>
+                )}
+                {skillsToDisplay.length === 0 && (
+                  <p className="text-sm text-slate-500">No skills added yet. <Link href="/employee/skills" className="font-semibold text-blue-600">Add skills</Link></p>
+                )}
               </div>
-            </div>
-            <Link href="/employee/skills" className="shrink-0 text-xs font-semibold text-blue-600 transition hover:text-blue-700">
-              Edit skills →
-            </Link>
-          </div>
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
-            {skillsToDisplay.map((skillName) => (
-              <span key={skillName} className="inline-flex max-w-full items-center rounded-full border border-blue-100/60 bg-[#F0F5FA] px-3.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-blue-50">
-                {skillName}
-              </span>
-            ))}
-            {extraSkillsCount > 0 && (
-              <Link href="/employee/skills" className="inline-flex shrink-0 items-center rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-100">
-                +{extraSkillsCount} more
-              </Link>
-            )}
-            {skillsToDisplay.length === 0 && (
-              <p className="text-sm text-slate-500">No skills added yet. <Link href="/employee/skills" className="font-semibold text-blue-600">Add skills</Link></p>
-            )}
-          </div>
-        </section>
-
+            </section>
           </div>
 
-          {/* Right Section: Recommended Jobs (~40% width) */}
+          {/* Right Section: Recommended Jobs */}
           <div className="dashboard-recommended-card min-w-0 self-start rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs sm:p-6">
             <div className="mb-5 flex min-w-0 items-start justify-between gap-3">
               <div className="min-w-0">
@@ -645,53 +703,184 @@ export default function EmployeeDashboardPage() {
               </Link>
             </div>
 
-            {/* List of Recommended Jobs */}
             <div className="dashboard-job-list min-w-0 space-y-3">
-              {recommendedJobs.map((job) => (
-                <Link
-                  key={job.id}
-                  href={`/jobs/${job.id.startsWith('rec-') ? '' : job.id}`}
-                  className="dashboard-job-card flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-slate-100 p-3 hover:border-blue-200 hover:bg-slate-50/50 transition group sm:p-3.5"
-                >
-                  {/* Left: Company Logo */}
-                  <JobLogo type={job.logoType} />
-
-                  {/* Center: Title, Company, Location */}
-                  <div className="min-w-0 flex-1">
-                    <strong className="block text-sm font-bold text-slate-900 truncate group-hover:text-blue-600 transition">
-                      {job.title}
-                    </strong>
-                    <span className="block text-xs text-slate-500 truncate mt-0.5">
-                      {job.companyName}
-                    </span>
-                    <span className="inline-flex w-full min-w-0 items-center gap-1 text-xs text-slate-400 mt-0.5">
-                      <Icon name="mapPin" className="w-3 h-3 shrink-0 text-slate-400" />
-                      <span className="block min-w-0 truncate">{job.location}</span>
-                    </span>
-                  </div>
-
-                  {/* Right: Badge, Salary, Chevron */}
-                  <div className="dashboard-job-meta flex shrink-0 items-center gap-2">
-                    <div className="text-right">
-                      <span
-                        className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${job.badge.bg} ${job.badge.text} ${job.badge.border}`}
-                      >
-                        {job.badge.label}
+              {recommendedJobs.length === 0 ? (
+                <div className="py-8 text-center text-sm text-slate-500">
+                  No recommended jobs right now.
+                </div>
+              ) : (
+                recommendedJobs.map((job) => (
+                  <Link
+                    key={job.id}
+                    href={`/jobs/${job.id.startsWith('rec-') ? '' : job.id}`}
+                    className="dashboard-job-card flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-slate-100 p-3 hover:border-blue-200 hover:bg-slate-50/50 transition group sm:p-3.5"
+                  >
+                    <JobLogo type={job.logoType} />
+                    <div className="min-w-0 flex-1">
+                      <strong className="block text-sm font-bold text-slate-900 truncate group-hover:text-blue-600 transition">
+                        {job.title}
+                      </strong>
+                      <span className="block text-xs text-slate-500 truncate mt-0.5">
+                        {job.companyName}
                       </span>
-                      <span className="block whitespace-nowrap text-xs sm:text-sm font-bold text-slate-900 mt-1">
-                        {job.salary}
+                      <span className="inline-flex w-full min-w-0 items-center gap-1 text-xs text-slate-400 mt-0.5">
+                        <Icon name="mapPin" className="w-3 h-3 shrink-0 text-slate-400" />
+                        <span className="block min-w-0 truncate">{job.location}</span>
                       </span>
                     </div>
-                    <Icon
-                      name="chevronRight"
-                      className="w-4 h-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition shrink-0"
-                    />
-                  </div>
-                </Link>
-              ))}
+                    <div className="dashboard-job-meta flex shrink-0 items-center gap-2">
+                      <div className="text-right">
+                        <span
+                          className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${job.badge.bg} ${job.badge.text} ${job.badge.border}`}
+                        >
+                          {job.badge.label}
+                        </span>
+                        <span className="block whitespace-nowrap text-xs sm:text-sm font-bold text-slate-900 mt-1">
+                          {job.salary}
+                        </span>
+                      </div>
+                      <Icon
+                        name="chevronRight"
+                        className="w-4 h-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition shrink-0"
+                      />
+                    </div>
+                  </Link>
+                ))
+              )}
             </div>
           </div>
         </div>
+
+        {/* Account deletion section */}
+        <section className="rounded-2xl border border-red-200 bg-white p-5 shadow-xs sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-base font-bold text-slate-900">
+                Delete Account
+              </h2>
+              <p className="mt-1 max-w-xl text-sm text-slate-600">
+                Permanently delete your technician account and associated
+                profile data. This action cannot be undone.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setDeleteConfirmation('');
+                setDeleteError('');
+                setDeleteDialogOpen(true);
+              }}
+              className="inline-flex shrink-0 items-center justify-center rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+            >
+              Delete Account
+            </button>
+          </div>
+        </section>
+
+        {/* Account deletion confirmation dialog */}
+        {deleteDialogOpen && (
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 p-4"
+            onMouseDown={(event) => {
+              if (
+                event.target === event.currentTarget &&
+                !deletingAccount
+              ) {
+                setDeleteDialogOpen(false);
+                setDeleteConfirmation('');
+                setDeleteError('');
+              }
+            }}
+          >
+            <section
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="delete-account-title"
+              className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
+            >
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-6 w-6"
+                  aria-hidden="true"
+                >
+                  <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              </div>
+
+              <h2
+                id="delete-account-title"
+                className="text-xl font-bold text-slate-900"
+              >
+                Are you absolutely sure?
+              </h2>
+
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Your technician account and associated profile data will
+                be permanently deleted. You will not be able to undo this
+                action.
+              </p>
+
+              <label
+                htmlFor="delete-account-confirmation"
+                className="mt-5 block text-sm font-semibold text-slate-800"
+              >
+                Type DELETE to confirm
+              </label>
+
+              <input
+                id="delete-account-confirmation"
+                type="text"
+                autoComplete="off"
+                value={deleteConfirmation}
+                onChange={(event) => setDeleteConfirmation(event.target.value)}
+                disabled={deletingAccount}
+                placeholder="Type DELETE"
+                className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-3 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
+              />
+
+              {deleteError && (
+                <p role="alert" className="mt-3 text-sm text-red-600">
+                  {deleteError}
+                </p>
+              )}
+
+              <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  disabled={deletingAccount}
+                  onClick={() => {
+                    setDeleteDialogOpen(false);
+                    setDeleteConfirmation('');
+                    setDeleteError('');
+                  }}
+                  className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  disabled={
+                    deletingAccount || deleteConfirmation !== 'DELETE'
+                  }
+                  onClick={handleDeleteAccount}
+                  className="rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {deletingAccount ? 'Deleting Account...' : 'Delete My Account'}
+                </button>
+              </div>
+            </section>
+          </div>
+        )}
 
       </div>
     </MotionConfig>

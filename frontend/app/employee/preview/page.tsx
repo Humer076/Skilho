@@ -7,7 +7,7 @@ import TechnicianProfileView, {
   TechProfile,
 } from '../../components/TechnicianProfileView';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3001';
 
 type Preview = TechProfile & {
   listing: { visibleToEmployers: boolean; hasName: boolean };

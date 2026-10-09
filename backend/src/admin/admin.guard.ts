@@ -21,10 +21,26 @@ export class AdminGuard implements CanActivate {
 
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { role: true },
+      select: { role: true, adminStatus: true, adminAccess: true },
     });
-    if (!user || user.role !== 'ADMIN') {
+    if (!user || user.role !== 'ADMIN' || user.adminStatus !== 'ACTIVE') {
       throw new ForbiddenException('Admins only');
+    }
+
+    const access = user.adminAccess;
+    if (!['SUPER_ADMIN', 'VERIFICATION', 'PAYMENTS', 'CONTENT'].includes(access)) {
+      throw new ForbiddenException('Admin access is not configured.');
+    }
+    request.adminAccess = access;
+
+    const accessRoutes: Record<string, string[]> = {
+      VERIFICATION: ['/admin/dashboard', '/admin/companies', '/admin/employers', '/admin/technicians', '/admin/manage/employers', '/admin/manage/technicians'],
+      PAYMENTS: ['/admin/dashboard', '/admin/packages', '/admin/reports', '/admin/manage/reports', '/packages/admin'],
+      CONTENT: ['/admin/dashboard', '/admin/website-content', '/admin/manage/articles'],
+    };
+    const path = request.path as string;
+    if (access !== 'SUPER_ADMIN' && !(accessRoutes[access] || []).some((route) => path === route || path.startsWith(`${route}/`))) {
+      throw new ForbiddenException('Your admin account does not have access to this section.');
     }
 
     return true;

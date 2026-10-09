@@ -52,8 +52,8 @@ export class AdminController {
 
   @Get('dashboard')
   @UseGuards(JwtAuthGuard, AdminGuard)
-  dashboard() {
-    return this.admin.getDashboard();
+  dashboard(@Req() req: any) {
+    return this.admin.getDashboard(req.adminAccess);
   }
 
   @Get('employers')

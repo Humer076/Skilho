@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { adminFetchList } from '../components/listApi';
 import AdminShell from '../components/AdminShell';
-import { adminFetch } from '../components/adminApi';
 import { expText, fmtDate } from '../components/ListPage';
 
 type Row = {
@@ -87,25 +86,14 @@ export default function AdminTechniciansPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
-  const [busyId, setBusyId] = useState<string | null>(null);
-
-  // TEMP DEBUG — remove once technicians render correctly
-  const [debugRaw, setDebugRaw] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
     setError('');
-    setDebugRaw('');
     try {
       const list = await adminFetchList<Row>('/admin/manage/technicians');
       setRows(list);
 
-      // TEMP DEBUG — capture the raw shape if we got nothing back
-      if (list.length === 0) {
-        const raw = await adminFetch<unknown>('/admin/manage/technicians');
-        console.log('RAW technicians response:', raw);
-        setDebugRaw(JSON.stringify(raw, null, 2).slice(0, 1500));
-      }
     } catch (e) {
       setError((e as Error).message);
       setRows([]);
@@ -118,21 +106,6 @@ export default function AdminTechniciansPage() {
     load();
   }, [load]);
 
-  async function toggle(row: Row) {
-    setError('');
-    setBusyId(row.id);
-    try {
-      await adminFetch(`/admin/manage/technicians/${row.id}/verify`, {
-        method: 'POST',
-        body: JSON.stringify({ verified: !row.verified }),
-      });
-      await load();
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setBusyId(null);
-    }
-  }
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -151,8 +124,6 @@ export default function AdminTechniciansPage() {
     );
   }, [rows, query]);
 
-  const verifiedCount = rows.filter((r) => r.verified).length;
-  const pendingCount = rows.length - verifiedCount;
 
   return (
     <AdminShell>
@@ -166,37 +137,10 @@ export default function AdminTechniciansPage() {
               Technicians
             </h1>
             <p className="mt-1 max-w-2xl text-slate-600">
-              Technician profiles. Verify a technician after you have checked their details.
+              Technician directory and activity overview. Review profile details and application activity here; document review is handled in the relevant records.
             </p>
           </div>
-          {!loading && !error && (
-            <div className="flex flex-wrap items-center gap-2 text-sm">
-              <span className="flex items-center gap-2 rounded-full border border-slate-200 bg-white/70 px-3.5 py-1.5 font-medium text-slate-600 shadow-sm backdrop-blur">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                </span>
-                {verifiedCount} verified
-              </span>
-              <span className="flex items-center gap-2 rounded-full border border-slate-200 bg-white/70 px-3.5 py-1.5 font-medium text-slate-600 shadow-sm backdrop-blur">
-                <span className="h-2 w-2 rounded-full bg-slate-400" />
-                {pendingCount} pending
-              </span>
-            </div>
-          )}
         </div>
-
-        {/* TEMP DEBUG BOX — remove once technicians render correctly */}
-        {debugRaw && (
-          <div className="rounded-lg border-2 border-dashed border-amber-300 bg-amber-50 p-4 text-xs">
-            <p className="mb-2 font-bold text-amber-900">
-              DEBUG — raw response from /admin/manage/technicians:
-            </p>
-            <pre className="max-h-64 overflow-auto whitespace-pre-wrap break-all font-mono text-amber-900">
-              {debugRaw}
-            </pre>
-          </div>
-        )}
 
         {error && (
           <div
@@ -274,13 +218,13 @@ export default function AdminTechniciansPage() {
                     <th className="px-5 py-3 text-center">Skills</th>
                     <th className="px-5 py-3 text-center">Applications</th>
                     <th className="px-5 py-3">Joined</th>
-                    <th className="px-5 py-3 text-right">Verification</th>
+                    
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {visible.length === 0 && (
                     <tr>
-                      <td colSpan={8} className="px-5 py-16 text-center">
+                      <td colSpan={7} className="px-5 py-16 text-center">
                         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
                           <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6">
                             <path d="M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM12 14a7 7 0 0 0-7 7h14a7 7 0 0 0-7-7Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -309,7 +253,6 @@ export default function AdminTechniciansPage() {
                   {visible.map((r, i) => {
                     const name = r.fullName || 'Profile not completed';
                     const location = [r.currentCity, r.currentState].filter(Boolean).join(', ');
-                    const busy = busyId === r.id;
                     return (
                       <tr
                         key={r.id}
@@ -353,35 +296,6 @@ export default function AdminTechniciansPage() {
                         </td>
                         <td className="whitespace-nowrap px-5 py-4 text-slate-600">
                           {fmtDate(r.createdAt)}
-                        </td>
-                        <td className="px-5 py-4 text-right">
-                          <button
-                            type="button"
-                            onClick={() => toggle(r)}
-                            disabled={busy}
-                            title={r.verified ? 'Click to unverify' : 'Click to verify'}
-                            className={`ad-tile inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold shadow-sm transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                              r.verified
-                                ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:border-emerald-300 hover:bg-emerald-100'
-                                : 'border-slate-300 bg-white text-slate-700 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700'
-                            }`}
-                          >
-                            {busy ? (
-                              <svg className="ad-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
-                                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25" />
-                                <path d="M4 12a8 8 0 0 1 8-8" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
-                              </svg>
-                            ) : r.verified ? (
-                              <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5">
-                                <path d="m9 12 2 2 4-4M12 3 4 6v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6l-8-3Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                              </svg>
-                            ) : (
-                              <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5">
-                                <path d="m9 12 2 2 4-4M12 3 4 6v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6l-8-3Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.5" />
-                              </svg>
-                            )}
-                            {r.verified ? 'Verified' : 'Not verified'}
-                          </button>
                         </td>
                       </tr>
                     );

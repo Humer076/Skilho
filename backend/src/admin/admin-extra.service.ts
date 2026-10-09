@@ -98,10 +98,11 @@ export class AdminExtraService {
     return this.pack(items, total, p);
   }
 
-  async setTechnicianVerified(id: string, verified: boolean) {
+  async setTechnicianVerified(adminId: string, id: string, verified: boolean) {
     const found = await this.prisma.employeeProfile.findUnique({ where: { id }, select: { id: true } });
     if (!found) throw new NotFoundException('Technician not found');
     await this.prisma.employeeProfile.update({ where: { id }, data: { verified } });
+    await this.prisma.adminAuditLog.create({ data: { actorId: adminId, action: 'STATUS_CHANGE', entityType: 'Technician', entityId: id, summary: `${verified ? 'Verified' : 'Unverified'} technician` } });
     return { verified };
   }
 
@@ -170,7 +171,7 @@ export class AdminExtraService {
     return this.pack(items, total, p);
   }
 
-  async setJobStatus(id: string, status: string) {
+  async setJobStatus(adminId: string, id: string, status: string) {
     if (status !== 'ACTIVE' && status !== 'CLOSED') throw new BadRequestException('Invalid status');
     const job = await this.prisma.job.findUnique({ where: { id }, select: { id: true, publishedAt: true } });
     if (!job) throw new NotFoundException('Job not found');
@@ -181,6 +182,7 @@ export class AdminExtraService {
         ...(status === 'ACTIVE' && !job.publishedAt ? { publishedAt: new Date() } : {}),
       },
     });
+    await this.prisma.adminAuditLog.create({ data: { actorId: adminId, action: 'STATUS_CHANGE', entityType: 'Job', entityId: id, summary: `Changed job status to ${status}` } });
     return { status };
   }
 
@@ -237,7 +239,7 @@ export class AdminExtraService {
     return this.pack(items, total, p);
   }
 
-  async addSkill(name: string) {
+  async addSkill(adminId: string, name: string) {
     const clean = name.trim();
     if (clean.length < 2) throw new BadRequestException('Skill name is too short');
     const exists = await this.prisma.skill.findFirst({
@@ -245,13 +247,16 @@ export class AdminExtraService {
       select: { id: true },
     });
     if (exists) throw new BadRequestException('This skill already exists');
-    return this.prisma.skill.create({ data: { name: clean }, select: { id: true, name: true } });
+    const skill = await this.prisma.skill.create({ data: { name: clean }, select: { id: true, name: true } });
+    await this.prisma.adminAuditLog.create({ data: { actorId: adminId, action: 'CREATE', entityType: 'Skill', entityId: skill.id, summary: `Added skill “${clean}”` } });
+    return skill;
   }
 
-  async setSkillActive(id: string, active: boolean) {
+  async setSkillActive(adminId: string, id: string, active: boolean) {
     const found = await this.prisma.skill.findUnique({ where: { id }, select: { id: true } });
     if (!found) throw new NotFoundException('Skill not found');
     await this.prisma.skill.update({ where: { id }, data: { active } });
+    await this.prisma.adminAuditLog.create({ data: { actorId: adminId, action: 'STATUS_CHANGE', entityType: 'Skill', entityId: id, summary: `${active ? 'Activated' : 'Deactivated'} skill` } });
     return { active };
   }
 
@@ -283,44 +288,65 @@ export class AdminExtraService {
   }
 
   /* ---------- Reports ---------- */
-  async reports() {
+  async reports(fromValue?: string, toValue?: string) {
     const now = new Date();
-    const months = Array.from({ length: 6 }, (_, i) => {
-      const offset = 5 - i;
-      const start = new Date(now.getFullYear(), now.getMonth() - offset, 1);
-      const end = new Date(now.getFullYear(), now.getMonth() - offset + 1, 1);
-      return { start, end, label: start.toLocaleString('en-US', { month: 'short', year: '2-digit' }) };
-    });
-
-    const [verification, applications, jobs, topSkills, signups, verifiedTechnicians, activeSubscriptions] =
-      await Promise.all([
-        this.prisma.employerProfile.groupBy({ by: ['verificationStatus'], _count: { _all: true } }),
-        this.prisma.jobApplication.groupBy({ by: ['status'], _count: { _all: true } }),
-        this.prisma.job.groupBy({ by: ['status'], _count: { _all: true } }),
-        this.prisma.skill.findMany({
-          orderBy: { employees: { _count: 'desc' } },
-          take: 8,
-          select: { name: true, _count: { select: { employees: true } } },
-        }),
-        Promise.all(
-          months.map((m) =>
-            this.prisma.user.count({
-              where: { role: { not: 'ADMIN' }, createdAt: { gte: m.start, lt: m.end } },
-            }),
-          ),
-        ),
-        this.prisma.employeeProfile.count({ where: { verified: true } }),
-        this.prisma.subscription.count({ where: { status: 'ACTIVE' } }),
-      ]);
+    const from = fromValue ? new Date(`${fromValue}T00:00:00.000Z`) : new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const to = toValue ? new Date(`${toValue}T23:59:59.999Z`) : now;
+    if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || from > to) {
+      throw new BadRequestException('Choose a valid report date range');
+    }
+    const window = { gte: from, lte: to };
+    const paidWhere = { status: 'PAID', createdAt: window };
+    const [
+      newUsers, newTechnicians, newEmployers, newAdmins,
+      totalUsers, totalTechnicians, totalEmployers, totalAdmins,
+      newJobs, totalJobs, openJobs, closedJobs, byCategory, byLocation,
+      newApplications, totalApplications, appStatuses, verificationGroups,
+      paidPayments, paidRevenue, allPaidRevenue, failedCount, refundedPayments, paidRows,
+    ] = await Promise.all([
+      this.prisma.user.count({ where: { createdAt: window } }),
+      this.prisma.user.count({ where: { role: 'EMPLOYEE', createdAt: window } }),
+      this.prisma.user.count({ where: { role: 'EMPLOYER', createdAt: window } }),
+      this.prisma.user.count({ where: { role: 'ADMIN', createdAt: window } }),
+      this.prisma.user.count(),
+      this.prisma.employeeProfile.count(),
+      this.prisma.employerProfile.count(),
+      this.prisma.user.count({ where: { role: 'ADMIN' } }),
+      this.prisma.job.count({ where: { createdAt: window } }),
+      this.prisma.job.count(),
+      this.prisma.job.count({ where: { status: 'ACTIVE' } }),
+      this.prisma.job.count({ where: { status: 'CLOSED' } }),
+      this.prisma.job.groupBy({ by: ['category'], _count: { _all: true }, orderBy: { _count: { category: 'desc' } }, take: 10 }),
+      this.prisma.job.groupBy({ by: ['city'], _count: { _all: true }, orderBy: { _count: { city: 'desc' } }, take: 10 }),
+      this.prisma.jobApplication.count({ where: { createdAt: window } }),
+      this.prisma.jobApplication.count(),
+      this.prisma.jobApplication.groupBy({ by: ['status'], where: { createdAt: window }, _count: { _all: true } }),
+      this.prisma.employerProfile.groupBy({ by: ['verificationStatus'], _count: { _all: true } }),
+      this.prisma.payment.count({ where: paidWhere }),
+      this.prisma.payment.aggregate({ where: paidWhere, _sum: { amountRupees: true } }),
+      this.prisma.payment.aggregate({ where: { status: 'PAID' }, _sum: { amountRupees: true } }),
+      this.prisma.payment.count({ where: { status: 'FAILED', createdAt: window } }),
+      this.prisma.payment.aggregate({ where: { status: 'REFUNDED', createdAt: window }, _count: { _all: true }, _sum: { amountRupees: true } }),
+      this.prisma.payment.findMany({ where: paidWhere, select: { amountRupees: true, package: { select: { id: true, name: true } } } }),
+    ]);
+    const verificationCount = (statuses: string[]) => verificationGroups.filter((row) => statuses.includes(row.verificationStatus)).reduce((sum, row) => sum + row._count._all, 0);
 
     return {
-      verificationStatus: verification.map((r) => ({ name: r.verificationStatus, count: r._count._all })),
-      applicationStatus: applications.map((r) => ({ name: r.status, count: r._count._all })),
-      jobStatus: jobs.map((r) => ({ name: r.status, count: r._count._all })),
-      topSkills: topSkills.map((s) => ({ name: s.name, count: s._count.employees })),
-      signups: months.map((m, i) => ({ name: m.label, count: signups[i] })),
-      verifiedTechnicians,
-      activeSubscriptions,
+      window: { from: from.toISOString(), to: to.toISOString() },
+      users: { newUsers, newTechnicians, newEmployers, newAdmins, totalUsers, totalTechnicians, totalEmployers, totalAdmins },
+      jobs: { newJobs, totalJobs, openJobs, closedJobs, byCategory: byCategory.map((r) => ({ category: r.category, count: r._count._all })), byLocation: byLocation.map((r) => ({ location: r.city, count: r._count._all })) },
+      applications: { newApplications, totalApplications, byStatus: APP_STATUSES.map((status) => ({ status, count: appStatuses.find((r) => r.status === status)?._count._all || 0 })) },
+      verification: {
+        awaitingReview: verificationCount(['REGISTRATION_SUBMITTED', 'PENDING_VERIFICATION']),
+        underReview: verificationCount(['UNDER_REVIEW']), approved: verificationCount(['APPROVED']),
+        rejected: verificationCount(['REJECTED']), suspended: verificationCount(['SUSPENDED']),
+      },
+      revenue: { paymentsCount: paidPayments, total: paidRevenue._sum.amountRupees || 0, allTimeTotal: allPaidRevenue._sum.amountRupees || 0,
+        failedCount, refundedCount: refundedPayments._count._all, refundedTotal: refundedPayments._sum.amountRupees || 0,
+        currency: 'INR', byPackage: Object.values(paidRows.reduce<Record<string, { packageId: string; packageName: string; paymentsCount: number; total: number }>>((groups, payment) => {
+          const entry = groups[payment.package.id] || { packageId: payment.package.id, packageName: payment.package.name, paymentsCount: 0, total: 0 };
+          entry.paymentsCount += 1; entry.total += payment.amountRupees; groups[payment.package.id] = entry; return groups;
+        }, {})).sort((a, b) => b.total - a.total) },
     };
   }
 
@@ -344,6 +370,7 @@ export class AdminExtraService {
     }
     const passwordHash = await bcrypt.hash(newPassword, 10);
     await this.prisma.user.update({ where: { id: adminId }, data: { passwordHash } });
+    await this.prisma.adminAuditLog.create({ data: { actorId: adminId, action: 'UPDATE', entityType: 'AdminUser', entityId: adminId, summary: 'Changed admin password' } });
     return { changed: true };
   }
 }

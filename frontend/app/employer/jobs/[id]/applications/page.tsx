@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import AuthImage from '../../../../components/AuthImage';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3001';
 
 const STATUS_OPTIONS = [
   'UNDER_REVIEW',

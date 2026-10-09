@@ -1,0 +1,38 @@
+export const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const TOKEN_KEY = 'skilho_admin_token';
+
+/** Calls the backend with the admin token. Sends the admin to login if the session is invalid. */
+export async function adminFetch<T = any>(path: string, init: RequestInit = {}): Promise<T> {
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (!token) {
+    window.location.href = '/admin/login';
+    throw new Error('Not logged in');
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(`${API}${path}`, {
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        ...(init.headers || {}),
+      },
+    });
+  } catch {
+    throw new Error('Cannot reach the backend. Is it running on port 3000?');
+  }
+
+  if (res.status === 401) {
+    localStorage.removeItem(TOKEN_KEY);
+    window.location.href = '/admin/login';
+    throw new Error('Session expired. Please log in again.');
+  }
+
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    const msg = Array.isArray(data?.message) ? data.message.join(', ') : data?.message;
+    throw new Error(msg || `Request failed (error ${res.status})`);
+  }
+  return data as T;
+}

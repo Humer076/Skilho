@@ -7,7 +7,8 @@ import { adminFetchList } from './listApi';
 import ThemeToggle from '../../components/ThemeToggle';
 
 export const ADMIN_TOKEN_KEY = 'skilho_admin_token';
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const ADMIN_ACCESS_KEY = 'skilho_admin_access';
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 const ICONS: Record<string, string> = {
   dashboard: 'M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z',
@@ -23,6 +24,9 @@ const ICONS: Record<string, string> = {
   chart: 'M4 20V10M10 20V4M16 20v-8M22 20H2',
   pulse: 'M3 12h4l2-6 4 12 2-6h6',
   gear: 'M12 15a3 3 0 100-6 3 3 0 000 6zM4 12h2M18 12h2M12 4v2M12 18v2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4M6.3 17.7l1.4-1.4M16.3 7.7l1.4-1.4',
+  globe: 'M12 22a10 10 0 100-20 10 10 0 000 20zM2 12h20M12 2a15 15 0 010 20M12 2a15 15 0 000 20',
+  key: 'M21 2l-2 2m-7.6 7.6a5 5 0 11-7.07-7.07 5 5 0 017.07 7.07zM15 7l3 3m-6 0l3 3m-3-3l-2 2',
+  list: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
   logout: 'M9 4H5v16h4M16 8l4 4-4 4M20 12H9',
   menu: 'M4 6h16M4 12h16M4 18h16',
   bell: 'M6 16V11a6 6 0 1112 0v5l2 2H4zM10 20a2 2 0 004 0',
@@ -48,9 +52,12 @@ const NAV = [
   { label: 'Packages', href: '/admin/packages', icon: 'package' },
   { label: 'Company Verification', href: '/admin/companies', icon: 'shield' },
   { label: 'Skills', href: '/admin/skills', icon: 'star' },
-  { label: 'Career Journey', href: '/admin/career-journey', icon: 'route' },
   { label: 'Reports', href: '/admin/reports', icon: 'chart' },
+  { label: 'Notifications', href: '/admin/notifications', icon: 'bell' },
+  { label: 'Website Content', href: '/admin/website-content', icon: 'globe' },
   { label: 'Settings', href: '/admin/settings', icon: 'gear' },
+  { label: 'Admin Users', href: '/admin/admin-users', icon: 'key' },
+  { label: 'Audit Logs', href: '/admin/audit-logs', icon: 'list' },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -344,12 +351,16 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const [pendingReviews, setPendingReviews] = useState<number | null>(null);
   const [alertsLoading, setAlertsLoading] = useState(false);
   const [ready, setReady] = useState(false);
+  const [adminAccess, setAdminAccess] = useState('SUPER_ADMIN');
   const profileRef = useRef<HTMLDivElement>(null);
   const alertsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!localStorage.getItem(ADMIN_TOKEN_KEY)) router.replace('/admin/login');
-    else setReady(true);
+    else {
+      setAdminAccess(localStorage.getItem(ADMIN_ACCESS_KEY) || 'SUPER_ADMIN');
+      setReady(true);
+    }
   }, [router]);
 
   useEffect(() => {
@@ -371,8 +382,19 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
   function logout() {
     localStorage.removeItem(ADMIN_TOKEN_KEY);
+    localStorage.removeItem(ADMIN_ACCESS_KEY);
     router.push('/admin/login');
   }
+
+  const allowed = (href: string) => {
+    if (adminAccess === 'SUPER_ADMIN') return true;
+    const routes: Record<string, string[]> = {
+      VERIFICATION: ['/admin/dashboard', '/admin/companies', '/admin/employers', '/admin/technicians'],
+      PAYMENTS: ['/admin/dashboard', '/admin/packages', '/admin/reports'],
+      CONTENT: ['/admin/dashboard', '/admin/website-content'],
+    };
+    return (routes[adminAccess] || []).some((route) => href === route || href.startsWith(`${route}/`));
+  };
 
   async function toggleAlerts() {
     const nextOpen = !alertsOpen;
@@ -410,7 +432,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
         <div className="px-4 pt-4 pb-2 text-[9px] font-extrabold uppercase tracking-[0.16em] text-slate-400">Workspace</div>
         <nav aria-label="Admin" className="flex-1 overflow-y-auto px-3 pb-3 space-y-1">
-          {NAV.map((n) => {
+          {NAV.filter((n) => allowed(n.href)).map((n) => {
             const active = pathname === n.href;
             return (
               <Link

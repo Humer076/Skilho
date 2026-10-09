@@ -117,10 +117,11 @@ export default function Home() {
         <div className="header-inner">
           <Link href="/" aria-label="Skilho home"><Logo /></Link>
           <nav className="main-nav">
-            <Link href="#jobs">Find jobs</Link>
+            <Link href="/jobs">Find jobs</Link>
             <Link href="#features">Why Skilho</Link>
             <Link href="#how">How it works</Link>
             <Link href="#employers">For employers</Link>
+            <Link href="/advertise" className="advertise-nav-link">Advertise With Us <span aria-hidden="true">↗</span></Link>
           </nav>
           <div className="header-actions">
             <Link href="/login/employee" className="login-link">Technician Login</Link>
@@ -230,13 +231,13 @@ export default function Home() {
             <li><span>02</span><div><h3>Discover the right roles</h3><p>Get relevant opportunities surfaced around your skills and preferences.</p></div></li>
             <li><span>03</span><div><h3>Apply and get noticed</h3><p>Track applications, hear back faster and move confidently through the process.</p></div></li>
           </ol>
-          <Link href="/login/employee" className="primary-btn">Build your profile <Icon size={18}><path d="M5 12h14M13 6l6 6-6 6" /></Icon></Link>
+         
         </div>
       </section>
 
       <section id="employers" className="employer-section">
         <div className="section-shell employer-inner">
-          <div><span className="section-kicker light">FOR EMPLOYERS</span><h2>Meet the people<br /><em>who move work forward.</em></h2><p>Stop sorting through hundreds of applications. Build a stronger pipeline with verified profiles and skill-first matching.</p><div className="employer-actions"><Link href="/login/employer" className="light-btn">Start hiring <Icon size={17}><path d="M5 12h14M13 6l6 6-6 6" /></Icon></Link><Link href="/contact" className="light-link">Talk to our team</Link></div></div>
+          <div><span className="section-kicker light">FOR EMPLOYERS</span><h2>Meet the people<br /><em>who move work forward.</em></h2><p>Stop sorting through hundreds of applications. Build a stronger pipeline with verified profiles and skill-first matching.</p><div className="employer-actions"><Link href="/contact" className="light-link">Talk to our team</Link></div></div>
           <div className="employer-panel"><div className="panel-top"><span>Hiring dashboard</span><span className="live"><i /> Live</span></div><div className="panel-stat"><span>Active candidates</span><strong>2,486</strong><small>+18.4% this month</small></div><div className="candidate-row"><i>RS</i><div><strong>Rahul Sharma</strong><span>Mobile Technician · 5 yrs</span></div><b>96%</b></div><div className="candidate-row"><i>NK</i><div><strong>Neha Kumar</strong><span>Electronics Specialist · 4 yrs</span></div><b>92%</b></div><div className="candidate-row"><i>AM</i><div><strong>Arjun Menon</strong><span>Laptop Technician · 3 yrs</span></div><b>89%</b></div></div>
         </div>
       </section>
@@ -244,7 +245,7 @@ export default function Home() {
       <footer className="site-footer">
         <div className="section-shell footer-grid">
           <div className="footer-brand"><Link href="/" className="footer-logo" aria-label="Skilho home"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="17" cy="2.5" r="2.4" fill="currentColor" /><path d="M14 5 5 13h7l-1 9 9-12h-7l1-5Z" fill="currentColor" /></svg><span>Skilho</span></Link><p>Connecting skilled people with the opportunities where they can do their best work.</p><div className="socials"><span>in</span><span>𝕏</span><span>◎</span></div></div>
-          <div><h4>Platform</h4><Link href="#jobs">Find jobs</Link><Link href="/login/employee">For professionals</Link><Link href="/login/employer">For employers</Link><Link href="/coming-soon">Mobile app</Link></div>
+          <div><h4>Platform</h4><Link href="/jobs">Find jobs</Link><Link href="/login/employee">For professionals</Link><Link href="/login/employer">For employers</Link><Link href="/coming-soon">Mobile app</Link></div>
           <div><h4>Company</h4><Link href="/about-us">About us</Link><Link href="/contact">Contact</Link><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link></div>
           <div><h4>Get started</h4><Link href="/login/employee">Create profile</Link><Link href="/login/employer">Post a job</Link><Link href="/advertise">Advertise</Link></div>
         </div>

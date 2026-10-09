@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-const API = 'http://localhost:3000';
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const TOKEN_KEY = 'skilho_admin_token';
+const ACCESS_KEY = 'skilho_admin_access';
 
 /* ------------------------------------------------------------------ */
 /*  Motion / polish layer (visual only — no logic)                     */
@@ -79,6 +80,7 @@ export default function AdminLoginPage() {
       }
 
       localStorage.setItem(TOKEN_KEY, data.token);
+      localStorage.setItem(ACCESS_KEY, data.user?.adminAccess || 'SUPER_ADMIN');
       router.push('/admin/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
@@ -103,7 +105,6 @@ export default function AdminLoginPage() {
 
         {/* top logo */}
         <div className="ad-up relative z-10 flex items-center gap-3">
-          <img src="/skilho-logo.png" alt="Skilho" className="admin-login-logo" />
           <div className="leading-tight">
             <p className="text-xl font-extrabold tracking-tight">Skilho</p>
             <p className="text-xs text-slate-400">Hire Skilled Technicians</p>
@@ -148,7 +149,6 @@ export default function AdminLoginPage() {
 
       {/* ---------- Form panel ---------- */}
       <section className="relative flex items-center justify-center overflow-hidden bg-gradient-to-br from-slate-50 via-white to-slate-100 p-6 sm:p-12 lg:bg-white">
-        <div className="absolute right-5 top-5 z-20"><img src="/skilho-logo.png" alt="Skilho" className="h-9 w-auto" /></div>
         {/* subtle decorative blobs for mobile / small screens */}
         <div className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-indigo-100/60 blur-3xl lg:hidden" aria-hidden />
         <div className="pointer-events-none absolute -bottom-24 -left-16 h-56 w-56 rounded-full bg-violet-100/60 blur-3xl lg:hidden" aria-hidden />
@@ -156,7 +156,6 @@ export default function AdminLoginPage() {
         <div className="relative w-full max-w-sm">
           {/* mobile logo */}
           <div className="ad-up mb-8 flex items-center gap-2.5 lg:hidden">
-            <img src="/skilho-logo.png" alt="Skilho" className="admin-login-mobile-logo" />
             <span className="text-lg font-extrabold text-slate-900">Skilho Admin</span>
           </div>
 

@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Icon from '../../components/Icon';
 import { SKILL_LEVEL_OPTIONS } from '../../lib/employeeOptions';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 type CatalogSkill = { id: string; name: string };
 
