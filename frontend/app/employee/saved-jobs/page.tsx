@@ -7,7 +7,7 @@ import { AnimatePresence, motion, MotionConfig } from 'framer-motion';
 import Icon from '../../components/Icon';
 import { CountUp, EASE, GlowCard, rise, stagger } from '../../components/motion';
 
-const API = 'http://localhost:3001';
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://skilho.onrender.com';
 
 type SavedJob = {
   id: string;
