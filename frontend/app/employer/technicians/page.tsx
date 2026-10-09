@@ -8,7 +8,7 @@ import { motion, MotionConfig, type Variants } from 'framer-motion';
 import AuthImage from '../../components/AuthImage';
 import { SKILL_LEVEL_OPTIONS, labelOf } from '../../lib/employeeOptions';
 
-const API = 'http://localhost:3001';
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://skilho.onrender.com';
 
 const inputClass =
   'w-full border border-slate-300 rounded-lg p-3 text-slate-900 bg-white/80 backdrop-blur-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 hover:border-slate-400';
