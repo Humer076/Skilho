@@ -11,7 +11,7 @@ import {
   labelOf,
 } from '../../lib/jobOptions';
 
-const API = 'http://localhost:3001';
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://skilho.onrender.com';
 
 type Job = {
   id: string;
