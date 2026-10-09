@@ -4,7 +4,6 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
     "prestart": "npm run build",
     "start:dev": "node scripts/start-server.js dev",
     "start": "node scripts/start-server.js start",
