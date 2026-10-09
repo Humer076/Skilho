@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { motion, MotionConfig } from 'framer-motion';
 import Icon from '../../components/Icon';
 
-const API = 'http://localhost:3001';
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://skilho.onrender.com';
 
 type Pkg = { id: string; name: string; tier: string; priceRupees: number; durationDays: number; jobCredits: number; featuredJobs: boolean; advancedSearch: boolean; priorityListing: boolean };
 type ActiveSub = { id: string; jobCreditsLeft: number; expiresAt: string; package: Pkg } | null;
