@@ -8,7 +8,7 @@ import AuthImage from '../../components/AuthImage';
 import Icon from '../../components/Icon';
 import { CountUp, EASE } from '../../components/motion';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://skilho.onrender.com';
 
 type Profile = {
   fullName: string | null;
