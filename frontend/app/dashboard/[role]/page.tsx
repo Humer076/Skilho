@@ -6,7 +6,7 @@ import { useParams, usePathname, useRouter } from 'next/navigation';
 import { motion, MotionConfig } from 'framer-motion';
 import Icon from '../../components/Icon';
 
-const API = 'http://localhost:3001';
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://skilho.onrender.com';
 
 type Me = {
   id: string;
