@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import PortalShell from '../components/PortalShell';
-
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://skilho.onrender.com';
 
 export default function NotificationsLayout({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<'employee' | 'employer'>('employee');
