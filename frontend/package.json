@@ -4,9 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prestart": "npm run build",
-    "start:dev": "node scripts/start-server.js dev",
-    "start": "node scripts/start-server.js start",
+    "build": "next build",
+    "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
