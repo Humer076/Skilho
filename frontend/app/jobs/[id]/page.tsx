@@ -12,7 +12,7 @@ import {
 } from '../../lib/jobOptions';
 import { postedText, salaryText } from '../../lib/jobFormat';
 
-const API = 'http://localhost:3001';
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://skilho.onrender.com';
 
 type JobDetail = {
   id: string;
