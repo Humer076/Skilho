@@ -9,7 +9,7 @@ import Icon from '../../components/Icon';
 import { CountUp, EASE, rise, stagger } from '../../components/motion';
 import { EMPLOYMENT_OPTIONS } from '../../lib/employeeOptions';
 
-const API = 'http://localhost:3001';
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://skilho.onrender.com';
 const MAX_PHOTO = 2 * 1024 * 1024;
 
 const inputClass =
