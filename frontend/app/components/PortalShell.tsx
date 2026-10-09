@@ -8,7 +8,7 @@ import ThemeToggle from './ThemeToggle';
 import SupportChatbot from './SupportChatbot';
 
 export type PortalRole = 'employee' | 'employer';
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://skilho.onrender.com';
 
 const EMPLOYEE_NAV = [
   ['/dashboard/employee', 'Overview', 'home'],
