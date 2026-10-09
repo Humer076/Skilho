@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, MotionConfig, type Variants } from 'framer-motion';
 
-const API = 'http://localhost:3001';
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://skilho.onrender.com';
 const MAX_SIZE = 5 * 1024 * 1024;
 
 const DOC_TYPES: { value: string; label: string }[] = [
