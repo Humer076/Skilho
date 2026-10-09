@@ -6,8 +6,7 @@ import Link from 'next/link';
 import { motion, MotionConfig, type Variants } from 'framer-motion';
 import Icon from '../../components/Icon';
 
-const API = 'http://localhost:3001';
-
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://skilho.onrender.com';
 const SPECIALIZATIONS = [
   'Android',
   'iPhone',
