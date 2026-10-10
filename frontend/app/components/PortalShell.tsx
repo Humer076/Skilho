@@ -37,7 +37,7 @@ const EMPLOYER_NAV = [
 function Brand() {
   return (
     <img
-      src="/skilho-logo.png"
+      src="https://i.pinimg.com/736x/70/ab/f2/70abf28404ee59707151fa92e27c44d7.jpg"
       alt="Skilho"
       className="portal-logo"
     />
