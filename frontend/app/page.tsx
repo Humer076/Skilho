@@ -251,6 +251,86 @@ export default function Home() {
         </div>
         <div className="section-shell footer-bottom"><span>© 2026 Skilho. All rights reserved.</span><span>Built for people who build things.</span></div>
       </footer>
+
+      <style jsx global>{`
+        *, *::before, *::after { box-sizing: border-box; }
+        html { width: 100%; overflow-x: clip; scroll-behavior: smooth; }
+        body { margin: 0; width: 100%; overflow-x: clip; }
+        .home { width: 100%; max-width: 100%; overflow: clip; }
+        .home img, .home svg { max-width: 100%; }
+        .site-header { width: 100%; }
+        .header-inner { width: min(100% - 48px, 1240px); margin-inline: auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 18px 24px; }
+        .header-inner > a { flex: 0 0 auto; }
+        .home-logo-img { display: block; width: 190px; height: auto; object-fit: contain; }
+        .main-nav { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 12px 24px; min-width: 0; }
+        .header-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 12px; }
+        .hero, .stats-section, .jobs-section, .feature-section, .how-section, .employer-section, .site-footer { min-width: 0; }
+        .hero-content { width: min(100% - 48px, 1240px); margin-inline: auto; min-width: 0; }
+        .hero-copy, .hero-visual { min-width: 0; }
+        .hero h1 { overflow-wrap: anywhere; }
+        .hero-lead, .hero-copy p, .section-shell p, .jobs-discovery-head p { overflow-wrap: break-word; }
+        .section-shell, .jobs-landing-shell { width: min(100% - 48px, 1240px); margin-inline: auto; min-width: 0; }
+        .impact-shell, .impact-cards, .feature-grid, .how-section, .employer-inner, .footer-grid { min-width: 0; }
+        .impact-stat, .feature-card, .employer-panel, .how-copy { min-width: 0; }
+        .footer-grid > * { min-width: 0; }
+        @media (max-width: 900px) {
+          .header-inner { width: calc(100% - 32px); gap: 14px; padding-block: 14px; }
+          .main-nav { order: 3; flex: 1 1 100%; justify-content: flex-start; gap: 10px 18px; }
+          .header-actions { margin-left: auto; gap: 8px; }
+          .home-logo-img { width: clamp(112px, 25vw, 165px); }
+          .hero-content { width: calc(100% - 36px); grid-template-columns: minmax(0, 1fr); gap: 24px; padding-block: 44px; }
+          .hero-visual { width: 100%; max-width: 540px; margin-inline: auto; }
+          .section-shell, .jobs-landing-shell { width: calc(100% - 36px); }
+          .impact-cards, .feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .how-section, .employer-inner { grid-template-columns: minmax(0, 1fr); gap: 32px; }
+          .how-visual { max-width: 100%; }
+          .footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
+        }
+        @media (max-width: 600px) {
+          .header-inner { width: calc(100% - 28px); align-items: center; gap: 12px; }
+          .home-logo-img { width: 108px; max-height: 48px; }
+          .header-actions { gap: 7px; }
+          .login-link { font-size: 12px !important; white-space: nowrap; }
+          .header-cta { display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 10px 11px !important; font-size: 12px !important; white-space: nowrap; }
+          .header-cta svg { width: 14px; height: 14px; }
+          .main-nav { display: flex; flex: 1 1 100%; gap: 8px 14px; justify-content: flex-start; font-size: 12px; line-height: 1.35; }
+          .main-nav a { max-width: 100%; }
+          .advertise-nav-link { padding: 7px 9px !important; }
+          .hero-content { width: calc(100% - 32px); padding-block: 34px 28px; gap: 16px; }
+          .hero-copy { width: 100%; }
+          .eyebrow { max-width: 100%; font-size: 10px !important; letter-spacing: .08em !important; padding: 9px 12px !important; }
+          .hero h1 { font-size: clamp(34px, 9vw, 48px) !important; line-height: 1.08 !important; letter-spacing: -.04em; }
+          .hero-lead { font-size: 15px !important; line-height: 1.65 !important; }
+          .hero-buttons { display: flex; flex-direction: column; align-items: stretch; gap: 10px; width: 100%; }
+          .hero-buttons a { width: 100%; justify-content: center; min-height: 46px; }
+          .hero-proof { gap: 10px; }
+          .hero-proof > div:last-child span { font-size: 12px; }
+          .hero-visual { min-height: 260px; transform: scale(.9); transform-origin: top center; margin-bottom: -20px; }
+          .world-chip { font-size: 10px !important; }
+          .floating-card { max-width: 190px; }
+          .section-shell, .jobs-landing-shell { width: calc(100% - 32px); }
+          .impact-shell { padding-block: 38px; }
+          .impact-intro h2, .jobs-discovery-head h2, .section-heading h2, .how-copy h2, .employer-inner h2 { font-size: clamp(28px, 8vw, 38px) !important; line-height: 1.15 !important; overflow-wrap: anywhere; }
+          .impact-cards, .feature-grid { grid-template-columns: minmax(0, 1fr); }
+          .impact-stat { padding: 18px !important; }
+          .jobs-discovery-head h2 br, .section-heading h2 br, .how-copy h2 br, .employer-inner h2 br { display: none; }
+          .jobs-discovery-head, .section-heading { text-align: left; }
+          .feature-card { padding: 22px !important; }
+          .how-section { padding-block: 38px; }
+          .phone { max-width: 100%; }
+          .phone-job { min-width: 0; }
+          .phone-job > div:nth-child(2) { min-width: 0; }
+          .phone-job strong, .phone-job small { overflow-wrap: anywhere; }
+          .employer-inner { padding-block: 38px; }
+          .employer-panel { padding: 18px !important; }
+          .candidate-row { gap: 10px; }
+          .candidate-row > div { min-width: 0; }
+          .candidate-row strong, .candidate-row span { overflow-wrap: anywhere; }
+          .footer-grid { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+          .footer-bottom { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding-block: 18px; font-size: 12px; }
+        }
+        @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+      `}</style>
     </main>
   );
 }
