@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -37,7 +36,7 @@ const EMPLOYER_NAV = [
 function Brand() {
   return (
     <img
-      src="https://i.pinimg.com/736x/70/ab/f2/70abf28404ee59707151fa92e27c44d7.jpg"
+      src="/skilho-logo.png"
       alt="Skilho"
       className="portal-logo"
     />
