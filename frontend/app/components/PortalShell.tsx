@@ -72,14 +72,14 @@ export default function PortalShell({
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const mobileSearchRef = useRef<HTMLInputElement>(null);
 
-  // Close menus when navigating to another page.
+  // Close mobile navigation and menus after route changes.
   useEffect(() => {
     setMobileMenuOpen(false);
     setProfileMenuOpen(false);
     setMobileSearchOpen(false);
   }, [pathname]);
 
-  // Prevent background scrolling while the mobile sidebar is open.
+  // Lock background scrolling while the mobile drawer is open.
   useEffect(() => {
     if (!mobileMenuOpen) return;
 
@@ -100,7 +100,7 @@ export default function PortalShell({
     };
   }, [mobileMenuOpen]);
 
-  // Close the profile menu when clicking outside it.
+  // Close profile menu when clicking outside.
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -121,7 +121,7 @@ export default function PortalShell({
     };
   }, []);
 
-  // Load the logged-in user's profile.
+  // Load signed-in user information.
   useEffect(() => {
     let cancelled = false;
 
@@ -163,7 +163,7 @@ export default function PortalShell({
           );
         }
       } catch {
-        // Keep the fallback profile labels.
+        // Keep the fallback profile information.
       }
     }
 
@@ -174,22 +174,22 @@ export default function PortalShell({
     };
   }, [role]);
 
-  // Focus the search input when mobile search is opened.
+  // Focus mobile search when opened.
   useEffect(() => {
     if (mobileSearchOpen) {
       mobileSearchRef.current?.focus();
     }
   }, [mobileSearchOpen]);
 
-  const nav = role === 'employer'
-    ? EMPLOYER_NAV
-    : EMPLOYEE_NAV;
+  const nav =
+    role === 'employer' ? EMPLOYER_NAV : EMPLOYEE_NAV;
 
   const homeHref = `/dashboard/${role}`;
 
-  const profileHref = role === 'employer'
-    ? '/employer/profile'
-    : '/employee/profile';
+  const profileHref =
+    role === 'employer'
+      ? '/employer/profile'
+      : '/employee/profile';
 
   const currentLabel = useMemo(() => {
     const item = nav.find(
@@ -210,7 +210,9 @@ export default function PortalShell({
     router.replace('/');
   }
 
-  function submitSearch(event: React.FormEvent<HTMLFormElement>) {
+  function submitSearch(
+    event: React.FormEvent<HTMLFormElement>,
+  ) {
     event.preventDefault();
 
     const q = query.trim();
@@ -231,25 +233,21 @@ export default function PortalShell({
     );
   }
 
-  function closeMobileMenu() {
-    setMobileMenuOpen(false);
-  }
-
   return (
     <div
       className={`portal-app portal-${role} relative flex min-h-screen w-full min-w-0`}
     >
-      {/* Mobile backdrop */}
+      {/* Mobile sidebar backdrop */}
       {mobileMenuOpen && (
         <button
           type="button"
           aria-label="Close navigation menu"
-          onClick={closeMobileMenu}
+          onClick={() => setMobileMenuOpen(false)}
           className="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-[2px] md:hidden"
         />
       )}
 
-      {/* Sidebar: drawer on mobile, regular sidebar on desktop */}
+      {/* Sidebar */}
       <aside
         id="portal-sidebar"
         aria-label="Main navigation"
@@ -259,35 +257,41 @@ export default function PortalShell({
           '!h-[100dvh] !w-72 !max-w-[85vw]',
           '!overflow-x-hidden !overflow-y-auto',
           'transition-transform duration-300 ease-in-out',
-          'md:!sticky md:!top-0 md:!z-20',
-          'md:!h-screen md:!w-auto md:!max-w-none',
-          'md:!translate-x-0 md:!transform-none',
           mobileMenuOpen
             ? '!translate-x-0'
             : '!-translate-x-full',
+          'md:!sticky md:!top-0 md:!z-20',
+          'md:!h-screen md:!w-auto md:!max-w-none',
+          'md:!translate-x-0 md:!transform-none',
         ].join(' ')}
       >
-        {/* Brand */}
+        {/* Sidebar brand */}
         <div className="portal-brand flex min-h-16 items-center justify-between gap-3">
           <Link
             href={homeHref}
-            onClick={closeMobileMenu}
+            onClick={() => setMobileMenuOpen(false)}
             className="min-w-0"
           >
             <Brand />
           </Link>
 
+          {/* CSS/text close icon; no Icon.tsx dependency */}
           <button
             type="button"
-            onClick={closeMobileMenu}
+            onClick={() => setMobileMenuOpen(false)}
             aria-label="Close navigation"
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 md:hidden"
           >
-            <Icon name="close" />
+            <span
+              aria-hidden="true"
+              className="text-3xl leading-none"
+            >
+              ×
+            </span>
           </button>
         </div>
 
-        {/* Navigation */}
+        {/* Workspace navigation */}
         <nav
           className="portal-nav"
           aria-label="Workspace navigation"
@@ -306,7 +310,7 @@ export default function PortalShell({
               <Link
                 key={href}
                 href={href}
-                onClick={closeMobileMenu}
+                onClick={() => setMobileMenuOpen(false)}
                 aria-current={active ? 'page' : undefined}
                 className={active ? 'active' : ''}
               >
@@ -317,7 +321,6 @@ export default function PortalShell({
           })}
         </nav>
 
-        {/* Mobile sidebar footer */}
         <div className="mt-auto px-4 py-4 md:hidden">
           <p className="text-xs text-slate-500">
             Skilho Workspace
@@ -325,11 +328,11 @@ export default function PortalShell({
         </div>
       </aside>
 
-      {/* Main area */}
+      {/* Main content */}
       <main className="portal-main !min-w-0 !w-0 flex-1">
-        {/* Topbar */}
+        {/* Responsive topbar */}
         <header className="portal-topbar !sticky !top-0 !z-30 !flex !min-w-0 !flex-wrap !items-center !gap-2 !px-3 sm:!px-5 lg:!px-7">
-          {/* Mobile menu button */}
+          {/* Mobile hamburger button */}
           <button
             type="button"
             aria-label={
@@ -344,10 +347,17 @@ export default function PortalShell({
             }
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-100 md:hidden"
           >
-            <Icon name="menu" />
+            <span
+              aria-hidden="true"
+              className="flex w-5 flex-col gap-1"
+            >
+              <span className="h-0.5 w-5 rounded bg-current" />
+              <span className="h-0.5 w-5 rounded bg-current" />
+              <span className="h-0.5 w-5 rounded bg-current" />
+            </span>
           </button>
 
-          {/* Current page */}
+          {/* Current page heading */}
           <div className="portal-heading !min-w-0 flex-1">
             <strong className="block truncate text-sm sm:text-base">
               {currentLabel}
@@ -384,9 +394,9 @@ export default function PortalShell({
             <kbd>⌘ K</kbd>
           </form>
 
-          {/* Actions */}
+          {/* Topbar actions */}
           <div className="portal-top-actions !flex !shrink-0 !items-center !gap-1.5 sm:!gap-2">
-            {/* Mobile search toggle */}
+            {/* Mobile search button */}
             <button
               type="button"
               aria-label="Open search"
@@ -412,7 +422,7 @@ export default function PortalShell({
               <i />
             </Link>
 
-            {/* Profile menu */}
+            {/* Profile dropdown */}
             <div
               className="relative shrink-0"
               ref={profileMenuRef}
@@ -449,7 +459,9 @@ export default function PortalShell({
                   <div className="py-1">
                     <Link
                       href={profileHref}
-                      onClick={() => setProfileMenuOpen(false)}
+                      onClick={() =>
+                        setProfileMenuOpen(false)
+                      }
                       className="flex items-center gap-2.5 px-4 py-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-blue-600"
                     >
                       <Icon
@@ -479,7 +491,7 @@ export default function PortalShell({
             </div>
           </div>
 
-          {/* Mobile search expands beneath the topbar */}
+          {/* Mobile search field */}
           {mobileSearchOpen && (
             <form
               onSubmit={submitSearch}
@@ -516,13 +528,13 @@ export default function PortalShell({
           )}
         </header>
 
-        {/* Page content */}
+        {/* Responsive page content */}
         <div className="portal-content !min-w-0 !w-full !max-w-full !overflow-x-clip">
           {children}
         </div>
       </main>
 
-      {/* Support chatbot */}
+      {/* Employee and employer support chatbot */}
       <SupportChatbot />
     </div>
   );
