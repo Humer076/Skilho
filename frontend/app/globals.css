@@ -1593,3 +1593,249 @@ input,select,textarea,button { max-width:100%; }
   .site-header .login-link { font-size: 12px; }
   .site-header .header-cta { padding: 10px 13px; }
 }
+/* =========================================================
+   SKILHO — RESPONSIVE FIX (paste at the VERY END of globals.css)
+   Goal: every page fits phones, tablets, laptops and big monitors.
+   Breakpoints: 480 / 760 / 1000 / 1280 / 1600
+   ========================================================= */
+
+/* ---------- 1. Global safety ---------- */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+html, body { max-width: 100%; overflow-x: clip; }
+body { min-height: 100vh; min-height: 100dvh; }
+img, svg, video, canvas, iframe { max-width: 100%; height: auto; }
+svg { height: auto; }
+.home, .portal-app, .contact-page, .about-page, .advertise-page { max-width: 100vw; }
+h1, h2, h3, p, a, span, strong { overflow-wrap: anywhere; }
+/* iOS Safari zooms inputs under 16px — stop that on touch devices */
+@media (hover: none) and (pointer: coarse) {
+  input, select, textarea { font-size: 16px !important; }
+  button, .btn-primary, .btn-secondary, .primary-btn, .secondary-btn,
+  .header-cta, .portal-nav a, .landing-filter-button { min-height: 44px; }
+}
+
+/* ---------- 2. Fluid containers (one rule for all pages) ---------- */
+.section-shell, .header-inner, .hero-content, .hero-bottom,
+.impact-shell, .jobs-landing-shell, .contact-layout,
+.about-shell, .advertise-shell {
+  width: min(1480px, calc(100% - clamp(24px, 5vw, 80px)));
+  max-width: 100%;
+  margin-inline: auto;
+}
+@media (min-width: 1201px) {
+  .section-shell, .header-inner, .hero-content, .hero-bottom,
+  .impact-shell, .jobs-landing-shell, .contact-layout,
+  .about-shell, .advertise-shell {
+    width: min(1480px, calc(100% - 80px));
+    max-width: 1480px;
+  }
+}
+@media (min-width: 1700px) {
+  .section-shell, .header-inner, .hero-content, .hero-bottom,
+  .impact-shell, .jobs-landing-shell, .contact-layout,
+  .about-shell, .advertise-shell { max-width: 1680px; width: min(1680px, calc(100% - 120px)); }
+}
+
+/* ---------- 3. Readable type (many sizes were 7–10px) ---------- */
+.home p, .home li, .home small { font-size: max(1em, 12px); }
+.job-meta, .job-card-bottom, .job-company small { font-size: clamp(11px, 1vw, 12px) !important; }
+.job-window .job-meta, .job-window .job-card-bottom { font-size: 10px !important; }
+.hero h1 { font-size: clamp(32px, 5.2vw, 56px); line-height: 1.04; }
+.hero-lead { font-size: clamp(14px, 1.5vw, 17px); }
+.section-heading h2, .centered h2 { font-size: clamp(28px, 4vw, 45px); }
+.how-copy h2, .employer-inner h2, .final-cta h2 { font-size: clamp(30px, 4.6vw, 50px); }
+.feature-card p, .steps p, .heading-side p, .centered p,
+.how-copy > p, .employer-inner > div:first-child > p, .final-cta p { font-size: clamp(13px, 1.2vw, 15px); }
+.steps h3 { font-size: clamp(14px, 1.3vw, 16px); }
+.footer-grid a { font-size: 12px !important; }
+.footer-brand p { font-size: 12px !important; }
+.footer-bottom { font-size: 11px !important; }
+.portal-nav a, .portal-support-row strong { font-size: 13px; }
+.portal-identity-copy small, .portal-support-row small { font-size: 11px; }
+.biz-panel-head p, .candidate-copy span, .activity-row span,
+.quick-row small, .emp-panel-head p, .step-row small { font-size: 11px; }
+.biz-panel-head h2, .candidate-copy strong, .activity-row strong,
+.quick-row strong, .step-row strong, .emp-panel-head h3 { font-size: 13px; }
+.price-card li, .credit-pill, .price-top p { font-size: 12px; }
+.pricing-trust strong { font-size: 13px; } .pricing-trust span, .trust-points span { font-size: 11px; }
+.notification-page .notification-copy strong { font-size: 13px; }
+.notification-page .notification-copy p { font-size: 12px; }
+
+/* ---------- 4. Header (all sizes) ---------- */
+.site-header { position: sticky; top: 0; z-index: 100; height: auto; min-height: 70px; }
+.site-header .header-inner { display: flex; align-items: center; justify-content: space-between; gap: clamp(10px, 2vw, 28px); padding-block: 12px; height: auto; min-height: 70px; }
+.header-actions { display: flex; align-items: center; gap: clamp(8px, 1.4vw, 18px); margin-left: auto; white-space: nowrap; }
+.main-nav { display: flex; gap: clamp(12px, 2vw, 31px); margin-left: clamp(8px, 4vw, 70px); }
+@media (max-width: 900px) {
+  .site-header .header-inner { flex-wrap: wrap; }
+  .main-nav { order: 3; width: 100%; margin: 0; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 6px; scrollbar-width: none; justify-content: flex-start; }
+  .main-nav::-webkit-scrollbar { display: none; }
+  .main-nav a { white-space: nowrap; font-size: 13px; }
+}
+@media (max-width: 480px) {
+  .home-logo-img { width: 100px; }
+  .login-link { font-size: 12px; }
+  .header-cta { padding: 9px 11px; font-size: 12px; }
+}
+
+/* ---------- 5. Home hero ---------- */
+.hero { min-height: 0; }
+.hero-content { min-height: 0; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(16px, 3vw, 48px); padding-block: clamp(32px, 6vw, 72px); align-items: center; }
+.hero-copy { padding: 0; min-width: 0; }
+.hero-visual { min-width: 0; min-height: clamp(420px, 46vw, 640px); padding: 0; }
+.hero-visual .job-window { width: min(455px, 100%); max-width: 100%; }
+.hero-visual .world-globe { width: clamp(240px, 26vw, 330px); height: clamp(240px, 26vw, 330px); }
+.hero-visual .world-glow { width: clamp(280px, 30vw, 380px); height: clamp(280px, 30vw, 380px); }
+.orbit-a, .orbit-b { max-width: 100%; }
+@media (max-width: 1000px) {
+  .hero-content { grid-template-columns: minmax(0, 1fr); text-align: center; }
+  .hero-copy { padding-top: 32px; }
+  .hero-buttons, .hero-proof { justify-content: center; flex-wrap: wrap; }
+  .hero-visual { min-height: 520px; width: 100%; max-width: 560px; margin-inline: auto; }
+  .hero-visual .job-window { position: absolute; left: 50%; right: auto; top: 56%; transform: translate(-50%, -50%); }
+}
+@media (max-width: 700px) {
+  .hero-buttons { flex-direction: column; align-items: stretch; margin-inline: 0; }
+  .hero-visual { min-height: 470px; }
+  .hero-visual .job-window { width: calc(100% - 8px); }
+  .hero-world, .floating-card, .world-chip, .orbit { display: none; }
+}
+
+/* ---------- 6. Home sections ---------- */
+.stats-grid, .impact-cards, .job-showcase, .feature-grid { min-width: 0; }
+.impact-cards { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.job-showcase, .feature-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 1100px) {
+  .impact-cards, .job-showcase, .feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .how-section { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .how-copy { padding: 0; }
+  .employer-inner { grid-template-columns: minmax(0, 1fr); gap: 36px; }
+  .employer-panel { width: 100%; max-width: 520px; }
+  .footer-grid { grid-template-columns: 1.5fr 1fr 1fr; }
+}
+@media (max-width: 640px) {
+  .impact-cards, .job-showcase, .feature-grid { grid-template-columns: minmax(0, 1fr); }
+  .section-heading.split { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .heading-side { width: 100%; }
+  .landing-job-toolbar { flex-direction: column; align-items: stretch; }
+  .landing-job-filters { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .landing-job-filters::-webkit-scrollbar { display: none; }
+  .employer-actions, .final-cta .hero-buttons { flex-wrap: wrap; }
+  .final-cta .primary-btn, .final-cta .secondary-btn { width: 100%; margin: 4px 0; }
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 28px; }
+  .footer-brand { grid-column: 1 / -1; }
+  .footer-bottom { flex-direction: column; gap: 6px; }
+}
+.how-visual { height: clamp(360px, 40vw, 440px); }
+.phone { width: clamp(200px, 22vw, 240px); height: clamp(365px, 40vw, 440px); max-width: 100%; }
+
+/* ---------- 7. Public pages: contact / about / advertise ---------- */
+@media (max-width: 1000px) {
+  .contact-layout { grid-template-columns: minmax(0, 1fr); }
+  .contact-info-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .about-hero-layout, .about-mission-layout, .about-audience-grid { grid-template-columns: minmax(0, 1fr); }
+  .about-offers-grid, .about-process-grid { grid-template-columns: minmax(0, 1fr); }
+  .about-reasons-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .advertise-hero-inner, .advertise-why-layout, .advertise-form-layout { grid-template-columns: minmax(0, 1fr); }
+  .advertise-form-copy { position: static; }
+  .advertise-options-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .contact-info-grid, .about-reasons-grid, .advertise-options-grid, .advertise-benefits-grid,
+  .contact-field-row, .about-business-list { grid-template-columns: minmax(0, 1fr); }
+  .about-process-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .about-hero-visual, .advertise-hero-art { transform: none; max-width: 100%; overflow: hidden; }
+  .contact-form-card, .advertise-enquiry-form { padding: 18px; }
+}
+
+/* ---------- 8. Portal shell (employee / employer): ONE mobile layout ---------- */
+.portal-app { min-height: 100vh; min-height: 100dvh; }
+.portal-sidebar { height: 100vh; height: 100dvh; width: clamp(210px, 18vw, 260px); flex-basis: clamp(210px, 18vw, 260px); }
+.portal-employee .portal-sidebar { width: clamp(220px, 20vw, 290px); flex-basis: clamp(220px, 20vw, 290px); }
+.portal-main { min-width: 0; flex: 1 1 0; }
+.portal-topbar { padding-inline: clamp(12px, 2.4vw, 32px); }
+.portal-search { width: min(360px, 32vw); }
+.portal-content > main { padding-inline: clamp(12px, 2.4vw, 30px) !important; }
+.portal-content table { display: block; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* Phones & small tablets: sidebar becomes a top strip so navigation is NOT lost
+   (previously it was display:none with no replacement) */
+@media (max-width: 860px) {
+  .portal-app { flex-direction: column; }
+  .portal-sidebar, .portal-employee .portal-sidebar, .portal-employer .portal-sidebar {
+    display: flex !important; position: sticky; top: 0; z-index: 60;
+    width: 100%; flex: 0 0 auto; height: auto; min-height: 0;
+    flex-direction: row; align-items: center;
+    border-right: 0; border-bottom: 1px solid var(--sk-line, #e2e8f0);
+    box-shadow: none; overflow: hidden;
+  }
+  .portal-brand, .portal-employee .portal-brand, .portal-employer .portal-brand { height: 56px; min-height: 56px; padding: 8px 12px; border: 0; flex: 0 0 auto; }
+  .portal-logo, .portal-employee .portal-logo, .portal-employer .portal-logo { width: 96px; }
+  .portal-identity, .portal-nav-label, .portal-sidebar-bottom { display: none !important; }
+  .portal-nav, .portal-employee .portal-nav, .portal-employer .portal-nav {
+    flex-direction: row; flex: 1 1 auto; min-width: 0; padding: 6px 8px; gap: 4px;
+    overflow-x: auto; overflow-y: hidden; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  }
+  .portal-nav::-webkit-scrollbar { display: none; }
+  .portal-nav a { flex: 0 0 auto; min-height: 40px; padding: 0 12px; white-space: nowrap; }
+  .portal-nav a.active:before, .portal-employer .portal-nav a.active:before { display: none; }
+  .portal-topbar, .portal-employee .portal-topbar { position: static; height: 58px; padding-inline: 12px; }
+  .portal-heading, .portal-profile-button { display: none; }
+  .portal-search { flex: 1 1 auto; width: auto; min-width: 0; }
+  .portal-search kbd { display: none; }
+  .portal-top-logout span { display: none; }
+  .portal-content, .portal-employee .portal-content { min-height: 0; }
+  .portal-content > main, .portal-employee .portal-content > main { min-height: 0 !important; padding: 14px 12px 28px !important; }
+}
+
+/* ---------- 9. Employee dashboard grids ---------- */
+.dashboard-stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 1100px) { .dashboard-stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .dashboard-stats-grid { grid-template-columns: minmax(0, 1fr); } }
+.employee-dashboard, .biz-content, .emp-content { width: 100%; min-width: 0; }
+
+/* ---------- 10. Employer dashboard / packages / emp-app ---------- */
+@media (max-width: 1100px) {
+  .biz-grid-main, .biz-bottom-grid, .emp-lower { grid-template-columns: minmax(0, 1fr); }
+  .emp-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pricing-grid, .pricing-grid.count-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: none; }
+}
+@media (max-width: 640px) {
+  .biz-welcome, .packages-hero, .emp-hero { flex-direction: column; align-items: flex-start; padding: 20px; }
+  .biz-welcome-actions { flex-wrap: wrap; width: 100%; }
+  .biz-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .emp-stats { grid-template-columns: minmax(0, 1fr); }
+  .pricing-grid, .pricing-grid.count-2 { grid-template-columns: minmax(0, 1fr); }
+  .pricing-trust { flex-direction: column; align-items: flex-start; }
+  .trust-points { flex-wrap: wrap; }
+  .current-plan { flex-wrap: wrap; }
+  .trend-chart { margin-inline: 12px; }
+  .packages-content { padding: 16px 12px 32px; }
+}
+
+/* ---------- 11. Admin shell ---------- */
+.admin-shell { min-width: 0; }
+.admin-shell main { min-width: 0; max-width: 100%; }
+.admin-shell table { display: block; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+@media (max-width: 850px) { .admin-command-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------- 12. Floating widgets ---------- */
+.sk-chat-panel { width: min(370px, calc(100vw - 24px)); height: min(520px, calc(100dvh - 96px)); }
+.sk-checkout-modal { width: min(440px, 100%); max-height: 92dvh; overflow-y: auto; }
+@media (max-width: 480px) {
+  .sk-chat-root { right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); }
+  .sk-chat-launcher span:not(.sk-chat-launch-icon) { display: none; } /* icon only on tiny screens */
+  .sk-chat-launcher { width: 52px; padding: 0; }
+}
+
+/* ---------- 13. Very large / very small screens ---------- */
+@media (min-width: 1800px) { html { font-size: 17px; } }
+@media (max-width: 340px) {
+  .hero h1 { font-size: 28px !important; }
+  .header-cta { padding: 8px !important; }
+}
+/* landscape phones: don't force tall heroes */
+@media (max-height: 520px) and (orientation: landscape) {
+  .hero-content { padding-block: 24px; }
+  .portal-sidebar { position: static; }
+}
