@@ -206,13 +206,23 @@ export default function AuthForm({ mode, role }: Props) {
             transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' }}
           />
 
-          <div className="relative z-10 flex items-center gap-3">
+          <div className="relative z-10 flex min-w-0 items-center gap-3">
             <img
               src="/skilho-logo.png"
               alt="Skilho"
-              className="h-11 w-auto rounded-xl bg-white px-2 py-1.5 shadow-xl"
+              width={190}
+              height={44}
+              className="block h-11 w-[190px] max-w-full shrink-0 rounded-xl bg-white px-2 py-1.5 object-contain shadow-xl"
+              style={{
+                width: '190px',
+                height: '44px',
+                maxWidth: '100%',
+                objectFit: 'contain',
+                display: 'block',
+                flexShrink: 0,
+              }}
             />
-            <div className="text-xs font-semibold text-white/45">
+            <div className="min-w-0 text-xs font-semibold text-white/45">
               Hire skilled. Work smarter.
             </div>
           </div>
@@ -284,11 +294,24 @@ export default function AuthForm({ mode, role }: Props) {
           </div>
 
           <div className="w-full max-w-[440px]">
-            <div className="mb-7 flex items-center justify-between lg:hidden">
-              <Link href="/" className="flex items-center gap-2.5">
-                <img src="/skilho-logo.png" alt="Skilho" className="h-9 w-auto" />
+            <div className="mb-7 flex items-center justify-between gap-3 lg:hidden">
+              <Link href="/" aria-label="Skilho home" className="flex min-w-0 items-center gap-2.5">
+                <img
+                  src="/skilho-logo.png"
+                  alt="Skilho"
+                  width={150}
+                  height={36}
+                  className="block h-9 w-[150px] max-w-full object-contain"
+                  style={{
+                    width: '150px',
+                    height: '36px',
+                    maxWidth: '100%',
+                    objectFit: 'contain',
+                    display: 'block',
+                  }}
+                />
               </Link>
-              <span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-slate-500 shadow-sm ring-1 ring-slate-200">
+              <span className="shrink-0 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-slate-500 shadow-sm ring-1 ring-slate-200">
                 {roleLabel}
               </span>
             </div>
