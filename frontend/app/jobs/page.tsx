@@ -316,11 +316,25 @@ function JobsContent() {
             aria-label="Skilho home"
             className="flex shrink-0 items-center"
           >
-            <img
-              src="/skilho-logo.png"
-              alt="Skilho"
-              className="h-8 w-auto object-contain transition-transform duration-200 hover:scale-[1.03] sm:h-9"
-            />
+            <Link
+  href="/"
+  aria-label="Skilho home"
+  className="flex h-12 w-[190px] shrink-0 items-center overflow-hidden"
+>
+  <img
+    src="/skilho-logo.png"
+    alt="Skilho"
+    width={190}
+    height={48}
+    style={{
+      width: '190px',
+      height: '48px',
+      maxWidth: '190px',
+      objectFit: 'contain',
+      display: 'block',
+    }}
+  />
+</Link>
           </Link>
 
           {role && (
