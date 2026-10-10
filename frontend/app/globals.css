@@ -1537,94 +1537,59 @@ input,select,textarea,button { max-width:100%; }
 @media (max-width: 560px) { .header-inner { width:calc(100% - 24px); } .home-logo-img { width:112px; } .main-nav { justify-content:flex-start; overflow-x:auto; flex-wrap:nowrap; padding:4px 0 8px; scrollbar-width:none; } .main-nav::-webkit-scrollbar { display:none; } .main-nav a { white-space:nowrap; font-size:12px; } .header-actions { gap:7px; } .login-link { font-size:12px; white-space:nowrap; } .header-cta { font-size:12px; padding:9px 10px; } .hero-world { display:none; } .sk-chat-root { right:12px!important; bottom:12px!important; } .sk-chat-panel { width:calc(100vw - 24px)!important; height:min(520px,calc(100dvh - 90px))!important; min-height:300px!important; } .portal-sidebar { z-index:70; } .portal-main { min-width:0; width:100%; } table { max-width:100%; } }
 @media (prefers-reduced-motion: reduce) { *,*::before,*::after { scroll-behavior:auto!important; animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; } }
 
-/* Final mobile viewport fixes for the Skilho homepage and advertise page. */
-html, body { max-width:100%; overflow-x:clip; }
-*, *::before, *::after { box-sizing:border-box; }
-.advertise-page { width:100%; max-width:100%; overflow-x:clip; }
-.advertise-shell { width:min(1180px, calc(100% - 48px)); margin-left:auto; margin-right:auto; }
-.advertise-page .site-header { width:100%; }
-.advertise-page .header-inner { width:calc(100% - 48px); min-width:0; gap:16px; }
-.advertise-page .header-inner > a { flex:0 1 auto; min-width:0; }
-.advertise-page .header-actions { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; min-width:0; }
-.advertise-page .header-cta { display:inline-flex; align-items:center; justify-content:center; gap:8px; white-space:nowrap; }
-.advertise-hero-inner { grid-template-columns:minmax(0,1fr) minmax(0,.85fr); }
-.advertise-hero-inner > div:first-child { min-width:0; }
-.advertise-hero-inner > div:first-child > p { max-width:38rem; overflow-wrap:normal; word-break:normal; }
-.advertise-hero .primary-btn { max-width:100%; white-space:normal; text-align:center; }
-.advertise-hero-art { min-width:0; width:100%; }
-.advertise-option-card, .advertise-benefits-grid article, .advertise-form-layout > * { min-width:0; }
-.advertise-page p, .advertise-page h1, .advertise-page h2, .advertise-page h3 { overflow-wrap:break-word; word-break:normal; }
 
-@media (max-width: 760px) {
-  .advertise-shell { width:calc(100% - 36px); }
-  .advertise-page .site-header { position:relative; height:auto; min-height:0; }
-  .advertise-page .header-inner { width:calc(100% - 28px); min-height:76px; height:auto; padding:12px 0; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; }
-  .advertise-page .home-logo-img { width:clamp(105px, 31vw, 140px); }
-  .advertise-page .header-actions { flex:1 1 auto; gap:8px; }
-  .advertise-page .login-link { font-size:clamp(11px, 3vw, 13px); white-space:normal; text-align:right; }
-  .advertise-page .header-cta { padding:10px 11px; font-size:clamp(11px, 3vw, 13px); }
-  .advertise-hero { padding:34px 0 26px; }
-  .advertise-hero-inner { display:grid; grid-template-columns:minmax(0,1fr); min-height:0; gap:12px; }
-  .advertise-eyebrow { max-width:100%; width:max-content; font-size:11px; letter-spacing:.1em; line-height:1.5; }
-  .advertise-hero h1 { max-width:100%; font-size:clamp(38px, 10vw, 48px); line-height:1.02; letter-spacing:-.055em; margin:24px 0 16px; }
-  .advertise-hero-inner > div:first-child > p { max-width:100%; width:100%; margin-bottom:20px; font-size:16px; line-height:1.6; }
-  .advertise-hero .primary-btn { display:flex; width:100%; min-height:52px; padding:13px 16px; white-space:normal; }
-  .advertise-hero-art { height:clamp(180px, 52vw, 230px); margin:8px auto 0; max-width:360px; }
-  .advertise-art-ring.ring-a { width:clamp(145px, 42vw, 175px); height:clamp(145px, 42vw, 175px); }
-  .advertise-art-ring.ring-b { width:clamp(185px, 54vw, 225px); height:clamp(185px, 54vw, 225px); }
-  .advertise-art-core { width:clamp(88px, 27vw, 108px); height:clamp(88px, 27vw, 108px); font-size:22px; }
-  .advertise-art-label { bottom:0; max-width:calc(100% - 12px); white-space:normal; text-align:center; font-size:11px; padding:8px 12px; }
-  .advertise-options-section, .advertise-why-section { padding:48px 0; }
-  .advertise-section-heading h2, .advertise-why-heading h2 { font-size:clamp(27px, 7vw, 34px); line-height:1.1; }
-  .advertise-section-heading > p, .advertise-why-heading > p { font-size:14px; line-height:1.65; }
-  .advertise-options-grid { grid-template-columns:minmax(0,1fr); gap:12px; }
-  .advertise-option-card { min-height:0; padding:19px; }
-  .advertise-option-card h3 { font-size:16px; }
-  .advertise-option-card p { font-size:13px; line-height:1.6; }
-  .advertise-benefits-grid { grid-template-columns:minmax(0,1fr); }
-  .advertise-form-section { padding:48px 0; }
-  .advertise-form-layout { grid-template-columns:minmax(0,1fr); gap:24px; }
-  .advertise-form-copy h2 { font-size:clamp(28px, 7.5vw, 36px); line-height:1.1; }
-  .advertise-form-copy > p { font-size:14px; line-height:1.65; }
-  .advertise-enquiry-form { width:100%; min-width:0; }
-  .about-footer .advertise-shell { display:flex; flex-direction:column; align-items:flex-start; gap:14px; }
-  .about-footer .advertise-shell > span { max-width:100%; }
+/* Desktop header repair: keep login actions in the header row, not over the hero.
+   Mobile rules above remain active on smaller screens. */
+@media (min-width: 901px) {
+  .site-header {
+    position: relative;
+    z-index: 100;
+    height: auto;
+    min-height: 88px;
+  }
+  .site-header .header-inner {
+    width: min(100% - 48px, 1440px);
+    min-height: 88px;
+    height: auto;
+    margin-inline: auto;
+    padding: 14px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: nowrap;
+  }
+  .site-header .header-inner > a:first-child {
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+  .site-header .header-actions {
+    position: static !important;
+    inset: auto !important;
+    transform: none !important;
+    margin: 0 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 14px;
+    flex: 0 0 auto;
+    width: auto;
+    white-space: nowrap;
+  }
+  .site-header .header-cta {
+    position: static !important;
+    transform: none !important;
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+  .main-nav { position: static; transform: none; }
+  .hero { position: relative; clear: both; }
 }
-
-@media (max-width: 380px) {
-  .advertise-page .header-inner { width:calc(100% - 20px); gap:7px; }
-  .advertise-page .home-logo-img { width:94px; }
-  .advertise-page .header-actions { gap:6px; }
-  .advertise-page .header-cta { padding:9px 8px; gap:5px; }
-  .advertise-shell { width:calc(100% - 28px); }
-  .advertise-hero h1 { font-size:36px; }
-}
-
-@media (max-width: 760px) {
-  /* Homepage hero: buttons must never exceed the viewport. */
-  .hero, .hero-content, .hero-copy, .hero-buttons, .hero-visual,
-  .section-shell, .job-showcase, .feature-grid, .employer-inner,
-  .final-inner, .footer-grid { min-width:0; max-width:100%; }
-  .hero-content { width:calc(100% - 32px); margin-inline:auto; }
-  .hero h1 { font-size:clamp(34px, 9vw, 46px); line-height:1.04; overflow-wrap:normal; }
-  .hero-lead { max-width:100%; line-height:1.65; }
-  .hero-buttons { width:100%; margin-left:0; margin-right:0; }
-  .hero-buttons > *, .final-cta .primary-btn, .final-cta .secondary-btn { width:100%; max-width:100%; min-width:0; white-space:normal; }
-  .hero-visual { width:100%; transform:none; margin-top:12px; }
-  .job-window { min-width:0; }
-  .stats-grid, .job-showcase, .feature-grid, .footer-grid { grid-template-columns:minmax(0,1fr); }
-  .footer-brand { grid-column:auto; }
-  .logo-row { justify-content:center; }
-  .final-cta h2, .how-copy h2, .employer-inner h2 { font-size:clamp(30px, 8vw, 42px); line-height:1.08; }
-}
-
-@media (max-width: 560px) {
-  .header-inner { gap:8px; }
-  .header-actions { min-width:0; max-width:calc(100% - 120px); }
-  .header-cta { white-space:normal; text-align:center; line-height:1.2; }
-  .login-link { overflow-wrap:anywhere; }
-  .hero-copy { padding-top:34px; }
-  .hero-buttons { gap:10px; }
-  .hero-visual { min-height:0; height:auto; }
-  .stats-grid { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+@media (min-width: 901px) and (max-width: 1100px) {
+  .site-header .header-inner { width: calc(100% - 32px); gap: 16px; }
+  .site-header .header-actions { gap: 9px; }
+  .site-header .main-nav { gap: 12px; }
+  .site-header .main-nav a,
+  .site-header .login-link { font-size: 12px; }
+  .site-header .header-cta { padding: 10px 13px; }
 }
